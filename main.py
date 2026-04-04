@@ -1,3 +1,4 @@
+import os
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -32,8 +33,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+os.makedirs(STATIC_DIR, exist_ok=True)
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")
+os.makedirs(TEMPLATES_DIR, exist_ok=True)
+templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
 # API Routers
 app.include_router(candidates.router, prefix="/api/candidates", tags=["candidates"])
@@ -50,4 +55,13 @@ async def root(request: Request):
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "event": "Terra Viva Royalty Day", "organizers": ["Club Sciences de l'Environnement", "Club AGEPD"], "school": "ENSPM Maroua"}
+    static_exists = os.path.isdir(STATIC_DIR)
+    templates_exists = os.path.isdir(TEMPLATES_DIR)
+    return {
+        "status": "ok",
+        "event": "Terra Viva Royalty Day",
+        "organizers": ["Club Sciences de l'Environnement", "Club AGEPD"],
+        "school": "ENSPM Maroua",
+        "static_dir": static_exists,
+        "templates_dir": templates_exists,
+    }
