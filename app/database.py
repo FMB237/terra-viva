@@ -97,45 +97,25 @@ async def init_db():
             INSERT OR IGNORE INTO settings VALUES ('event_name',           'Terra Viva Royalty Day');
             INSERT OR IGNORE INTO settings VALUES ('edition',              '2026');
 
-            -- Seed demo candidates
+            -- Seed candidates (from candidate.txt)
             INSERT OR IGNORE INTO candidates(id,name,category,department,year,age,bio,quote,status) VALUES
-            (1,'Aïcha Mahamat','miss','Sciences Environnementales','Licence 3',22,
-             'Ambassadrice du Club SCI-ENV, Aïcha mène des recherches sur la biodiversité du bassin du lac Tchad. Passionnée de danses traditionnelles soudano-sahéliennes, elle représente la fierté de la région.',
-             'La nature n''est pas un héritage de nos parents, c''est un emprunt de nos enfants.','active'),
-            (2,'Fatima Youssouf','miss','Agriculture Élevage et Produits Dérivés','Licence 2',21,
-             'Membre active du Club AGEPD-ENSPM, Fatima œuvre pour la valorisation des produits agro-pastoraux locaux. Musicienne traditionnelle grassfield, elle allie science et culture.',
-             'Nourrir le Cameroun par l''intelligence de ses fils et filles.','active'),
-            (3,'Claudine Ngassa','miss','Sciences Environnementales','Master 1',23,
-             'Chercheuse en écologie des zones arides, Claudine développe des solutions numériques de surveillance environnementale. Représentante du peuple Fang-Béti au sein de l''ENSPM.',
-             'Le code peut sauver la planète si on lui donne la bonne direction.','active'),
-            (4,'Mariam Bello','miss','Agriculture Élevage et Produits Dérivés','Licence 1',20,
-             'Première de sa famille à accéder à l''enseignement supérieur polytechnique, Mariam porte les valeurs rurales du Nord Cameroun. Danseuse traditionnelle sawa.',
-             'Les racines profondes résistent aux tempêtes les plus violentes.','active'),
-            (5,'Edith Tchana','miss','Sciences Environnementales','Licence 3',22,
-             'Spécialiste en gestion durable des ressources forestières, Edith participe activement aux expositions stands culturels de l''ENSPM. Interprète musicale traditionnelle.',
-             'Protéger la forêt, c''est protéger notre avenir.','active'),
-            (6,'Nadia Sali','miss','Agriculture Élevage et Produits Dérivés','Master 2',24,
-             'Chercheuse en agro-écologie sahélienne, Nadia représente l''excellence académique de l''ENSPM. Elle coordonne les ateliers photo lors des foires culturelles.',
-             'Chaque graine plantée est un espoir pour demain.','active'),
+            (1,'MAFOCK KINGNE PELAGIE','miss','Informatique et télécommunications','Niveau 1',NULL,
+             'Groupe ethnique : grassfields',NULL,'active'),
+            (2,'ZAITOUNA ADAMA','miss','Sciences environnementales','Niveau 2',NULL,
+             'Groupe ethnique : soudano sahélien',NULL,'active'),
+            (3,'NUCK CÉCILE','miss','Sciences environnementales','Niveau 1',NULL,
+             'Groupe ethnique : SAWA',NULL,'active'),
+            (4,'ANGUE OBAM MANUELLA','miss','Génie civil','Niveau 1',NULL,
+             'Groupe ethnique : fang-beti',NULL,'active'),
 
-            (7,'Ibrahim Moussa','master','Sciences Environnementales','Master 2',25,
-             'Président du Club SCI-ENV, Ibrahim est spécialiste de la gestion durable des ressources en eau dans le bassin du lac Tchad. Leader engagé et danseur grassfield.',
-             'L''eau est la vie — préservons-la pour les générations futures.','active'),
-            (8,'Rodrigue Nkamba','master','Agriculture Élevage et Produits Dérivés','Master 1',24,
-             'Co-fondateur du Club AGEPD-ENSPM, Rodrigue mène des recherches sur l''élevage durable en zone sahélienne. Représentant culturel du peuple Sawa.',
-             'L''agro-pastoralisme durable est la clé de la sécurité alimentaire africaine.','active'),
-            (9,'Alexis Foka','master','Sciences Environnementales','Licence 3',23,
-             'Développeur de systèmes SIG pour le suivi de la déforestation, Alexis allie informatique et écologie. Passionné de stand-up et sketches lors des foires culturelles ENSPM.',
-             'La data au service de la planète, l''humain au centre de tout.','active'),
-            (10,'Moïse Mbessa','master','Agriculture Élevage et Produits Dérivés','Licence 2',22,
-             'Passionné d''agro-écologie régénérative, Moïse développe des modèles agricoles adaptés aux zones semi-arides du Nord Cameroun. Interprète musical traditionnel fang-béti.',
-             'La terre nous nourrit si on prend soin d''elle.','active'),
-            (11,'Patrick Essama','master','Sciences Environnementales','Licence 3',24,
-             'Chercheur en climatologie sahélienne, Patrick sensibilise les communautés locales aux effets des changements climatiques. Coordinateur des parades culturelles ENSPM.',
-             'Le Sahel n''est pas condamné si nous agissons ensemble maintenant.','active'),
-            (12,'Junior Wanko','master','Agriculture Élevage et Produits Dérivés','Licence 1',20,
-             'Fils d''éleveur, Junior utilise la technologie pour moderniser les pratiques pastorales traditionnelles. Photographe lors des ateliers photo des foires culturelles.',
-             'Honorer nos traditions tout en embrassant l''avenir technologique.','active');
+            (5,'SIGNING FRANK BRONDON','master','AGEPD/PAA','Niveau 4',NULL,
+             'Groupe ethnique : grassfields',NULL,'active'),
+            (6,'ISSA NADJE SAMOUPA','master','AGEPD','Niveau 1',NULL,
+             'Groupe ethnique : soudano sahélien',NULL,'active'),
+            (7,'ANAËL NDENGUE','master','Énergie renouvelable','Niveau 2',NULL,
+             'Groupe ethnique : SAWA',NULL,'active'),
+            (8,'AMOUGOU METOGO ELYSÉE','master','Sciences environnementales','Niveau 1',NULL,
+             'Groupe ethnique : fang-beti',NULL,'active');
 
             -- Default admin (password: admin123 — CHANGER EN PRODUCTION!)
             INSERT OR IGNORE INTO admins(username, password_hash, role)
