@@ -12,6 +12,7 @@ async def get_db():
 
 async def init_db():
     async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
         await db.executescript("""
             PRAGMA journal_mode=WAL;
 
@@ -32,9 +33,11 @@ async def init_db():
 
             CREATE TABLE IF NOT EXISTS voters (
                 id               INTEGER PRIMARY KEY AUTOINCREMENT,
-                matricule        TEXT NOT NULL UNIQUE,
-                date_of_birth    TEXT NOT NULL,
-                phone            TEXT,
+                full_name        TEXT,
+                email            TEXT,
+                phone            TEXT NOT NULL,
+                is_student       INTEGER DEFAULT 0,
+                matricule        TEXT UNIQUE,
                 has_voted_miss   INTEGER DEFAULT 0,
                 has_voted_master INTEGER DEFAULT 0,
                 created_at       TEXT DEFAULT (datetime('now'))
@@ -139,5 +142,41 @@ async def init_db():
                    '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TiGniAg7uk1.hZWq.zNDAMwm6KqW',
                    'super_admin');
         """)
+        # Migrate old voters schema if needed (remove date_of_birth, allow optional matricule)
+        cur = await db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='voters'")
+        if await cur.fetchone():
+            cur = await db.execute("PRAGMA table_info(voters)")
+            cols = [r["name"] for r in await cur.fetchall()]
+            if "date_of_birth" in cols or "full_name" not in cols or "is_student" not in cols:
+                await db.executescript("""
+                    CREATE TABLE IF NOT EXISTS voters_new (
+                        id               INTEGER PRIMARY KEY AUTOINCREMENT,
+                        full_name        TEXT,
+                        email            TEXT,
+                        phone            TEXT NOT NULL,
+                        is_student       INTEGER DEFAULT 0,
+                        matricule        TEXT UNIQUE,
+                        has_voted_miss   INTEGER DEFAULT 0,
+                        has_voted_master INTEGER DEFAULT 0,
+                        created_at       TEXT DEFAULT (datetime('now'))
+                    );
+                """)
+                await db.execute("""
+                    INSERT INTO voters_new (id, full_name, email, phone, is_student, matricule, has_voted_miss, has_voted_master, created_at)
+                    SELECT id,
+                           NULL as full_name,
+                           NULL as email,
+                           COALESCE(phone, '') as phone,
+                           CASE WHEN matricule IS NOT NULL AND matricule != '' THEN 1 ELSE 0 END as is_student,
+                           matricule,
+                           has_voted_miss,
+                           has_voted_master,
+                           created_at
+                    FROM voters
+                """)
+                await db.executescript("""
+                    DROP TABLE voters;
+                    ALTER TABLE voters_new RENAME TO voters;
+                """)
         await db.commit()
         print("✅ DB initialisée — Terra Viva Royalty Day · ENSPM Maroua · 9 Mai 2026")

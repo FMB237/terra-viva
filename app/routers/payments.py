@@ -11,6 +11,7 @@ from app.schemas import PaymentInitiate, PaymentCallback, PaymentOut
 import aiosqlite
 import uuid
 import os
+import json
 from datetime import datetime
 
 router = APIRouter()
@@ -69,6 +70,9 @@ async def initiate_payment(
     data: PaymentInitiate,
     db: aiosqlite.Connection = Depends(get_db),
 ):
+    if data.is_student and not data.matricule:
+        raise HTTPException(400, "Le matricule est requis pour les étudiants")
+
     # Check voting open
     cur = await db.execute("SELECT value FROM settings WHERE key = 'voting_open'")
     row = await cur.fetchone()
@@ -91,13 +95,46 @@ async def initiate_payment(
     if not candidate:
         raise HTTPException(404, "Candidat introuvable")
 
-    # Check voter hasn't already voted
-    cur = await db.execute("SELECT * FROM voters WHERE matricule = ?", (data.matricule,))
-    voter = await cur.fetchone()
+    # Check voter hasn't already voted (by phone and/or matricule)
+    voter = None
+    if data.matricule:
+        cur = await db.execute(
+            "SELECT * FROM voters WHERE phone = ? OR (matricule IS NOT NULL AND matricule = ?)",
+            (data.phone, data.matricule),
+        )
+        voter = await cur.fetchone()
+    else:
+        cur = await db.execute("SELECT * FROM voters WHERE phone = ?", (data.phone,))
+        voter = await cur.fetchone()
     if voter:
         col = "has_voted_miss" if candidate["category"] == "miss" else "has_voted_master"
         if voter[col]:
             raise HTTPException(409, f"Vous avez déjà voté pour la catégorie {candidate['category'].upper()}")
+        # Update voter info with latest data
+        await db.execute(
+            "UPDATE voters SET full_name = ?, email = ?, phone = ?, is_student = ?, matricule = ? WHERE id = ?",
+            (
+                data.full_name,
+                data.email,
+                data.phone,
+                1 if data.is_student else 0,
+                data.matricule,
+                voter["id"],
+            ),
+        )
+        await db.commit()
+    else:
+        await db.execute(
+            "INSERT INTO voters (full_name, email, phone, is_student, matricule) VALUES (?, ?, ?, ?, ?)",
+            (
+                data.full_name,
+                data.email,
+                data.phone,
+                1 if data.is_student else 0,
+                data.matricule,
+            ),
+        )
+        await db.commit()
 
     # BUG FIX: check for duplicate pending payment for same matricule+candidate
     cur = await db.execute(
@@ -121,12 +158,26 @@ async def initiate_payment(
     reference = f"TV-{uuid.uuid4().hex[:10].upper()}"
     now = datetime.utcnow().isoformat()
 
+    metadata = json.dumps(
+        {
+            "full_name": data.full_name,
+            "email": data.email,
+            "is_student": data.is_student,
+            "matricule": data.matricule,
+        },
+        ensure_ascii=False,
+    )
+
     await db.execute(
         """INSERT INTO payments
            (reference, phone, amount, provider, status, candidate_id, voter_matricule, created_at, updated_at)
            VALUES (?, ?, ?, ?, 'pending', ?, ?, ?, ?)""",
         (reference, data.phone, VOTE_PRICE, data.provider,
          data.candidate_id, data.matricule, now, now),
+    )
+    await db.execute(
+        "UPDATE payments SET metadata = ? WHERE reference = ?",
+        (metadata, reference),
     )
     await db.commit()
 
@@ -174,23 +225,58 @@ async def payment_callback(
         candidate = await cur.fetchone()
         if candidate:
             category = candidate["category"]
-            cur = await db.execute(
-                "SELECT * FROM voters WHERE matricule = ?", (payment["voter_matricule"],)
-            )
+            meta = {}
+            if payment["metadata"]:
+                try:
+                    meta = json.loads(payment["metadata"])
+                except Exception:
+                    meta = {}
+            phone = payment["phone"]
+            matricule = payment["voter_matricule"] or meta.get("matricule")
+
+            if matricule:
+                cur = await db.execute(
+                    "SELECT * FROM voters WHERE phone = ? OR (matricule IS NOT NULL AND matricule = ?)",
+                    (phone, matricule),
+                )
+            else:
+                cur = await db.execute("SELECT * FROM voters WHERE phone = ?", (phone,))
             voter = await cur.fetchone()
 
             if not voter:
                 await db.execute(
-                    "INSERT OR IGNORE INTO voters (matricule, date_of_birth, phone) VALUES (?, '', ?)",
-                    (payment["voter_matricule"], payment["phone"]),
+                    "INSERT OR IGNORE INTO voters (full_name, email, phone, is_student, matricule) VALUES (?, ?, ?, ?, ?)",
+                    (
+                        meta.get("full_name"),
+                        meta.get("email"),
+                        phone,
+                        1 if meta.get("is_student") else 0,
+                        matricule,
+                    ),
                 )
                 await db.commit()
-                cur = await db.execute(
-                    "SELECT * FROM voters WHERE matricule = ?", (payment["voter_matricule"],)
-                )
+                if matricule:
+                    cur = await db.execute(
+                        "SELECT * FROM voters WHERE phone = ? OR (matricule IS NOT NULL AND matricule = ?)",
+                        (phone, matricule),
+                    )
+                else:
+                    cur = await db.execute("SELECT * FROM voters WHERE phone = ?", (phone,))
                 voter = await cur.fetchone()
 
             if voter:
+                await db.execute(
+                    "UPDATE voters SET full_name = ?, email = ?, phone = ?, is_student = ?, matricule = ? WHERE id = ?",
+                    (
+                        meta.get("full_name"),
+                        meta.get("email"),
+                        phone,
+                        1 if meta.get("is_student") else 0,
+                        matricule,
+                        voter["id"],
+                    ),
+                )
+                await db.commit()
                 col = "has_voted_miss" if category == "miss" else "has_voted_master"
                 if not voter[col]:
                     await db.execute(
