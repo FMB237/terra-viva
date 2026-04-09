@@ -3,3 +3,4 @@ venv
 terra_viva.db
 __pycache__
 .env
+.codex_session_resume.sh
