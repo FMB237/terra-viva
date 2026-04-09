@@ -45,17 +45,21 @@ class CandidateOut(BaseModel):
 
 # ── VOTER ──────────────────────────────────────────
 class VoterRegister(BaseModel):
-    matricule: str = Field(..., min_length=3, max_length=30)
-    date_of_birth: str = Field(..., description="Format: YYYY-MM-DD")
-    phone: Optional[str] = None
+    full_name: str = Field(..., min_length=2, max_length=120)
+    email: Optional[str] = Field(None, max_length=120)
+    phone: str = Field(..., min_length=9, max_length=15)
+    is_student: bool = False
+    matricule: Optional[str] = Field(None, min_length=3, max_length=30)
 
 
 # ── VOTE ───────────────────────────────────────────
 class VoteCreate(BaseModel):
     candidate_id: int
     category: Literal["miss", "master"]
-    matricule: str
-    date_of_birth: str
+    full_name: str = Field(..., min_length=2, max_length=120)
+    email: Optional[str] = Field(None, max_length=120)
+    is_student: bool = False
+    matricule: Optional[str] = Field(None, min_length=3, max_length=30)
     payment_method: Literal["orange_money", "mtn_momo"]
     phone: str = Field(..., min_length=9, max_length=15)
 
@@ -74,8 +78,10 @@ class PaymentInitiate(BaseModel):
     phone: str = Field(..., min_length=9, max_length=15)
     provider: Literal["orange_money", "mtn_momo"]
     candidate_id: int
-    matricule: str
-    date_of_birth: str
+    full_name: str = Field(..., min_length=2, max_length=120)
+    email: Optional[str] = Field(None, max_length=120)
+    is_student: bool = False
+    matricule: Optional[str] = Field(None, min_length=3, max_length=30)
 
 
 class PaymentCallback(BaseModel):

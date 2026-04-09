@@ -114,22 +114,55 @@ async def cast_vote(
     if candidate["category"] != data.category:
         raise HTTPException(400, "Catégorie du candidat incorrecte")
 
-    cur = await db.execute("SELECT * FROM voters WHERE matricule = ?", (data.matricule,))
-    voter = await cur.fetchone()
+    if data.is_student and not data.matricule:
+        raise HTTPException(400, "Le matricule est requis pour les étudiants")
+
+    voter = None
+    if data.matricule:
+        cur = await db.execute(
+            "SELECT * FROM voters WHERE phone = ? OR (matricule IS NOT NULL AND matricule = ?)",
+            (data.phone, data.matricule),
+        )
+        voter = await cur.fetchone()
+    else:
+        cur = await db.execute("SELECT * FROM voters WHERE phone = ?", (data.phone,))
+        voter = await cur.fetchone()
 
     if voter:
-        if voter["date_of_birth"] != data.date_of_birth:
-            raise HTTPException(403, "Matricule ou date de naissance incorrecte")
         col = "has_voted_miss" if data.category == "miss" else "has_voted_master"
         if voter[col]:
             raise HTTPException(409, f"Vous avez déjà voté dans la catégorie {data.category.upper()}")
-    else:
         await db.execute(
-            "INSERT INTO voters (matricule, date_of_birth, phone) VALUES (?, ?, ?)",
-            (data.matricule, data.date_of_birth, data.phone),
+            "UPDATE voters SET full_name = ?, email = ?, phone = ?, is_student = ?, matricule = ? WHERE id = ?",
+            (
+                data.full_name,
+                data.email,
+                data.phone,
+                1 if data.is_student else 0,
+                data.matricule,
+                voter["id"],
+            ),
         )
         await db.commit()
-        cur = await db.execute("SELECT * FROM voters WHERE matricule = ?", (data.matricule,))
+    else:
+        await db.execute(
+            "INSERT INTO voters (full_name, email, phone, is_student, matricule) VALUES (?, ?, ?, ?, ?)",
+            (
+                data.full_name,
+                data.email,
+                data.phone,
+                1 if data.is_student else 0,
+                data.matricule,
+            ),
+        )
+        await db.commit()
+        if data.matricule:
+            cur = await db.execute(
+                "SELECT * FROM voters WHERE phone = ? OR (matricule IS NOT NULL AND matricule = ?)",
+                (data.phone, data.matricule),
+            )
+        else:
+            cur = await db.execute("SELECT * FROM voters WHERE phone = ?", (data.phone,))
         voter = await cur.fetchone()
 
     if voter is None:

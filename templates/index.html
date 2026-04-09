@@ -267,6 +267,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(12,10,6,0.92
 .toggle-slider::before{content:'';position:absolute;width:15px;height:15px;left:3px;top:3px;background:var(--muted);border-radius:50%;transition:0.3s;}
 .toggle input:checked + .toggle-slider{background:rgba(122,182,72,0.2);border-color:var(--leaf);}
 .toggle input:checked + .toggle-slider::before{transform:translateX(20px);background:var(--leaf);}
+.student-toggle{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+.student-toggle .form-label{margin-bottom:0;color:var(--text);font-size:12px;letter-spacing:1px;text-transform:uppercase;}
 /* MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.84);backdrop-filter:blur(10px);z-index:200;display:none;align-items:center;justify-content:center;padding:18px;}
 .modal-overlay.open{display:flex;}
@@ -691,13 +693,26 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;}
     <!-- Step 2 -->
     <div class="step" id="step2">
       <h2 class="modal-title">Vos informations</h2>
-      <p class="modal-subtitle">Vérification d'identité ENSPM + paiement</p>
-      <div class="form-group"><label class="form-label">Matricule étudiant ENSPM</label><input class="form-input" type="text" id="matriculeInput" placeholder="Ex: 23ENV001"></div>
+      <p class="modal-subtitle">Informations du votant + paiement</p>
+      <div class="form-group"><label class="form-label">Nom complet</label><input class="form-input" type="text" id="fullNameInput" placeholder="Ex: Jean Dupont"></div>
+      <div class="form-group"><label class="form-label">Email (optionnel)</label><input class="form-input" type="email" id="emailInput" placeholder="exemple@mail.com"></div>
+      <div class="form-group">
+        <div class="student-toggle">
+          <label class="form-label">Êtes-vous étudiant ENSPM ?</label>
+          <label class="toggle">
+            <input type="checkbox" id="isStudentInput">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="form-group" id="studentFields" style="display:none;">
+        <label class="form-label">Matricule étudiant ENSPM</label>
+        <input class="form-input" type="text" id="matriculeInput" placeholder="Ex: 23ENV001">
+      </div>
       <div class="form-group">
         <label class="form-label">Numéro <span id="paymentLabel" style="color:var(--gold)">Orange Money</span></label>
         <div class="phone-input-wrap"><span class="phone-prefix">+237</span><input class="form-input" type="tel" id="phoneInput" placeholder="6XX XX XX XX"></div>
       </div>
-      <div class="form-group"><label class="form-label">Date de naissance (vérification)</label><input class="form-input" type="date" id="dobInput"></div>
       <button class="modal-btn modal-btn-gold" id="payBtn" onclick="initiatePayment()">Payer 100 FCFA →</button>
       <button class="modal-btn" onclick="goToStep(1)" style="background:none;border:1px solid var(--border);color:var(--muted);margin-top:6px;">← Retour</button>
     </div>
@@ -924,11 +939,20 @@ function selectModalPayment(type) {
   document.getElementById('paymentLabel').textContent = type === 'orange' ? 'Orange Money' : 'MTN MoMo';
 }
 
+function updateStudentFields() {
+  const isStudent = document.getElementById('isStudentInput')?.checked;
+  const field = document.getElementById('studentFields');
+  if (field) field.style.display = isStudent ? 'block' : 'none';
+}
+
 async function initiatePayment() {
+  const fullName  = document.getElementById('fullNameInput').value.trim();
+  const email     = document.getElementById('emailInput').value.trim();
+  const isStudent = document.getElementById('isStudentInput').checked;
   const matricule = document.getElementById('matriculeInput').value.trim();
   const phone     = document.getElementById('phoneInput').value.trim();
-  const dob       = document.getElementById('dobInput').value;
-  if (!matricule || !phone || !dob) { showNotification('⚠️','Veuillez remplir tous les champs'); return; }
+  if (!fullName || !phone) { showNotification('⚠️','Veuillez remplir les champs requis'); return; }
+  if (isStudent && !matricule) { showNotification('⚠️','Veuillez saisir votre matricule'); return; }
   if (!selectedCandidate) return;
 
   const btn = document.getElementById('payBtn');
@@ -938,11 +962,13 @@ async function initiatePayment() {
     const res = await apiFetch('/api/payments/initiate', {
       method: 'POST',
       body: JSON.stringify({
+        full_name: fullName,
+        email: email || null,
+        is_student: isStudent,
+        matricule: isStudent ? matricule : null,
         phone: '+237' + phone,
         provider: selectedPayment,
         candidate_id: selectedCandidate.id,
-        matricule,
-        date_of_birth: dob,
       }),
     });
     currentPaymentRef = res.reference;
@@ -1250,8 +1276,10 @@ function showNotification(icon, msg) {
 document.getElementById('voteModal').addEventListener('click', e => {
   if (e.target.id === 'voteModal') closeModal();
 });
+document.getElementById('isStudentInput')?.addEventListener('change', updateStudentFields);
 
 // Init
+updateStudentFields();
 loadCandidates();
 </script>
 </body>
