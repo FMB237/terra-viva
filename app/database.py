@@ -98,24 +98,40 @@ async def init_db():
             INSERT OR IGNORE INTO settings VALUES ('edition',              '2026');
 
             -- Seed candidates (from candidate.txt)
-            INSERT OR IGNORE INTO candidates(id,name,category,department,year,age,bio,quote,status) VALUES
-            (1,'MAFOCK KINGNE PELAGIE','miss','Informatique et télécommunications','Niveau 1',NULL,
-             'Groupe ethnique : grassfields',NULL,'active'),
+            INSERT OR IGNORE INTO candidates(id,name,category,department,year,age,bio,quote,photo_url,status) VALUES
+            (1,'MAFOCK KINGNE PELAGIE','miss','Informatique et Télécommunication','Niveau 1',NULL,
+             'Je suis née dans les paysages majestueux de l’Ouest, là où les forêts et les rivières racontent des histoires anciennes. Grandi dans le Septentrion, au cœur du Grand Nord, j’ai vu la richesse de nos terres, la beauté des montagnes et la fragilité des écosystèmes face aux changements qui les menacent. Ces observations ont éveillé en moi la volonté de comprendre et d’agir. C’est naturellement que je me suis tournée vers l’informatique et les télécommunications, convaincue que la technologie pouvait devenir un outil puissant pour préserver notre environnement, tout en reliant modernité et respect des racines de ma terre.',
+             'Allier technologie et racines pour protéger la biodiversité, préserver notre héritage et réaliser l’ambition de Terra Viva.',
+             '/static/images/mafock_kingne_pelagie.jpg','active'),
             (2,'ZAITOUNA ADAMA','miss','Sciences environnementales','Niveau 2',NULL,
-             'Groupe ethnique : soudano sahélien',NULL,'active'),
-            (3,'NUCK CÉCILE','miss','Sciences environnementales','Niveau 1',NULL,
-             'Groupe ethnique : SAWA',NULL,'active'),
-            (4,'ANGUE OBAM MANUELLA','miss','Génie civil','Niveau 1',NULL,
-             'Groupe ethnique : fang-beti',NULL,'active'),
+             'Mon déclic pour l’environnement est né en observant la résilience de nos paysages du Septentrion. Voir la terre se fragiliser face à l''avancée du désert dans mon Grand Nord natal m’a poussée vers l’ingénierie environnementale.',
+             'Mandara du Grand Nord et ingénieur, je lie racines et science pour l’ambition de Terra Viva.',
+             '/static/images/zaitouna_adama.jpg','active'),
+            (3,'NUCK CÉCILE','miss','Sciences environnementales','IC1',NULL,
+             'Participer à un concours de miss a été une expérience marquante pour moi. Au-delà de l’apparence, j’ai appris à m’exprimer, à défendre des valeurs et à représenter une cause. C’est à ce moment que j’ai compris que j’avais une voix. Aujourd’hui, je choisis de l’utiliser pour sensibiliser à la protection de l’environnement. En tant qu’étudiante en sciences environnementales, je veux être une ambassadrice d’une terre vivante… Terra Viva.',
+             'Agir localement, penser globalement: sensibiliser, recycler et reverdir pour une terre vivante et résiliente demain.',
+             '/static/images/nuck_cecile.jpg','active'),
+            (4,'ANGUE OBAM MANUELLA ANNA','miss','Génie civil','Niveau 1',NULL,
+             'Mon déclic pour le génie civil est né avec l''intention de protéger la communauté au travers de la construction des routes et des maisons durables, suite à de nombreuses situations telles que des inondations.',
+             'Génie civil au service de l''écosystème: bâtir un avenir vert pour la biodiversité camerounaise.',
+             '/static/images/angue_obam_manuella_anna.jpg','active'),
 
-            (5,'SIGNING FRANK BRONDON','master','AGEPD/PAA','Niveau 4',NULL,
-             'Groupe ethnique : grassfields',NULL,'active'),
-            (6,'ISSA NADJE SAMOUPA','master','AGEPD','Niveau 1',NULL,
-             'Groupe ethnique : soudano sahélien',NULL,'active'),
-            (7,'ANAËL NDENGUE','master','Énergie renouvelable','Niveau 2',NULL,
-             'Groupe ethnique : SAWA',NULL,'active'),
+            (5,'SIGNING FRANK BRONDON','master','Agriculture, Élevage et Produits Dérivés (AGEPD)','Niveau 4',NULL,
+             'Entrepreneuriat.',
+             'Valorisation des déjections animales en biogaz pour énergie propre et fertilisation durable des cultures locales.',
+             '/static/images/signing_frank_brondon.jpg','active'),
+            (6,'ISSA NADJE SAMOUPA','master','Agriculture, Élevage et Produits Dérivés (AGEPD)','Niveau 1',NULL,
+             'L’expérience dans le mannequinat et le ventes en ligne.',
+             'La valorisation des déchets animaux transforme fumier et résidus en énergie, engrais organiques, réduisant pollution et renforçant agriculture durable.',
+             '/static/images/issa_nadje_samoupa.jpg','active'),
+            (7,'ANAËL NDENGUE','master','Énergie renouvelable (ENREN)','IC2',NULL,
+             'Restaurateur et enseignant.',
+             'L''élégance au service de l''environnement, la nature est une source d''inspiration.',
+             '/static/images/anael_ndengue.jpg','active'),
             (8,'AMOUGOU METOGO ELYSÉE','master','Sciences environnementales','Niveau 1',NULL,
-             'Groupe ethnique : fang-beti',NULL,'active');
+             'Originaire du Centre du Cameroun. J’ai grandi entouré de verdure… mais j’ai aussi vu cette verdure disparaître, lentement, silencieusement. Là où il y avait des arbres, il y a aujourd’hui de la chaleur. Là où il y avait de la vie, il y a parfois du vide. Ce constat m’a marqué. Il m’a surtout donné une conviction : si nous ne faisons rien, nous perdrons bien plus que des arbres… nous perdrons notre équilibre. Alors j’ai décidé d’agir. Parce que protéger l’environnement, ce n’est pas une option, c’est une urgence, et surtout une responsabilité.',
+             'Un jeune, un arbre : Reverdir notre communauté.',
+             '/static/images/amougou_metogo_elysee.jpg','active');
 
             -- Default admin (password: admin123 — CHANGER EN PRODUCTION!)
             INSERT OR IGNORE INTO admins(username, password_hash, role)
