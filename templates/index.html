@@ -269,6 +269,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(12,10,6,0.92
 .toggle input:checked + .toggle-slider::before{transform:translateX(20px);background:var(--leaf);}
 .student-toggle{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
 .student-toggle .form-label{margin-bottom:0;color:var(--text);font-size:12px;letter-spacing:1px;text-transform:uppercase;}
+.consent-row{display:flex;align-items:flex-start;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+.consent-row input{margin-top:2px;}
+.consent-text{font-size:12px;color:var(--muted);line-height:1.5;}
+.consent-text a{color:var(--gold);text-decoration:none;}
+.consent-text a:hover{text-decoration:underline;}
 /* MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.84);backdrop-filter:blur(10px);z-index:200;display:none;align-items:center;justify-content:center;padding:18px;}
 .modal-overlay.open{display:flex;}
@@ -713,6 +718,12 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;}
         <label class="form-label">Numéro <span id="paymentLabel" style="color:var(--gold)">Orange Money</span></label>
         <div class="phone-input-wrap"><span class="phone-prefix">+237</span><input class="form-input" type="tel" id="phoneInput" placeholder="6XX XX XX XX"></div>
       </div>
+      <div class="form-group">
+        <label class="consent-row">
+          <input type="checkbox" id="consentInput">
+          <span class="consent-text">J'accepte les conditions d'utilisation et la politique de confidentialité.</span>
+        </label>
+      </div>
       <button class="modal-btn modal-btn-gold" id="payBtn" onclick="initiatePayment()">Payer 100 FCFA →</button>
       <button class="modal-btn" onclick="goToStep(1)" style="background:none;border:1px solid var(--border);color:var(--muted);margin-top:6px;">← Retour</button>
     </div>
@@ -949,10 +960,12 @@ async function initiatePayment() {
   const fullName  = document.getElementById('fullNameInput').value.trim();
   const email     = document.getElementById('emailInput').value.trim();
   const isStudent = document.getElementById('isStudentInput').checked;
+  const consent   = document.getElementById('consentInput').checked;
   const matricule = document.getElementById('matriculeInput').value.trim();
   const phone     = document.getElementById('phoneInput').value.trim();
   if (!fullName || !phone) { showNotification('⚠️','Veuillez remplir les champs requis'); return; }
   if (isStudent && !matricule) { showNotification('⚠️','Veuillez saisir votre matricule'); return; }
+  if (!consent) { showNotification('⚠️','Veuillez accepter les conditions'); return; }
   if (!selectedCandidate) return;
 
   const btn = document.getElementById('payBtn');
