@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator, EmailStr
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Literal
 import re
 
@@ -56,7 +56,6 @@ class VoterRegister(BaseModel):
     def validate_email(cls, v):
         if v is None or v == "":
             return None
-        # Simple but solid email regex
         pattern = r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$'
         if not re.match(pattern, v.strip()):
             raise ValueError("Format email invalide. Ex: nom@gmail.com")
@@ -65,9 +64,7 @@ class VoterRegister(BaseModel):
     @field_validator("phone")
     @classmethod
     def validate_phone(cls, v):
-        # Remove all spaces and dashes for storage
         cleaned = re.sub(r'[\s\-\(\)]', '', v)
-        # Must start with + and contain only digits after
         if not re.match(r'^\+\d{7,15}$', cleaned):
             raise ValueError(
                 "Format téléphone invalide. "
@@ -107,6 +104,16 @@ class VoteCreate(BaseModel):
                 "Incluez l'indicatif pays. Ex: +237699000001, +33612345678"
             )
         return cleaned
+
+
+# ── VoteOut — manquait dans la version précédente ──
+class VoteOut(BaseModel):
+    id: int
+    candidate_id: int
+    candidate_name: str
+    category: str
+    payment_method: str
+    created_at: str
 
 
 # ── PAYMENT ────────────────────────────────────────
