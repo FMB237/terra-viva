@@ -65,3 +65,31 @@ async def health():
         "static_dir": static_exists,
         "templates_dir": templates_exists,
     }
+@app.get("/debug-env")
+async def debug_env():
+    import os
+    username = os.getenv("CAMPAY_APP_USERNAME", "")
+    password = os.getenv("CAMPAY_APP_PASSWORD", "")
+    base_url = os.getenv("CAMPAY_BASE_URL", "")
+    
+    # Test direct du SDK
+    result = {}
+    try:
+        from campay.sdk import Client
+        client = Client({
+            "app_username": username,
+            "app_password": password,
+            "environment": "DEV" if "demo" in base_url else "PROD",
+        })
+        # Essaie de récupérer le token
+        token = client.get_token()
+        result = {"token_ok": True, "token": str(token)[:20] + "..."}
+    except Exception as e:
+        result = {"token_ok": False, "error": str(e)}
+    
+    return {
+        "campay_username_set": bool(username),
+        "campay_password_set": bool(password),
+        "campay_base_url": base_url,
+        "sdk_test": result,
+    }
