@@ -327,7 +327,7 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;}
     <div class="stats-row">
       <div class="stat-item"><div class="stat-num" id="statCandidates">—</div><div class="stat-label">Candidats</div></div>
       <div class="stat-item"><div class="stat-num" id="statVotes">—</div><div class="stat-label">Votes</div></div>
-      <div class="stat-item"><div class="stat-num">100F</div><div class="stat-label">Par vote</div></div>
+      <div class="stat-item"><div class="stat-num">25F</div><div class="stat-label">Par vote</div></div>
     </div>
     <div class="countdown-section">
       <div class="countdown-label">⏳ Compte à rebours — 9 Mai 2026</div>
@@ -383,13 +383,13 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;}
         <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--leaf);margin-bottom:9px;">L'événement</div>
         <h2 class="about-title">La célébration de la <span style="color:var(--gold)">culture</span> et de l'<span style="color:var(--leaf)">excellence</span></h2>
         <p class="about-text">Terra Viva Royalty Day est une foire culturelle co-organisée par le <strong>Département des Sciences Environnementales</strong> et le <strong>Département d'Agriculture Élevage et Produits Dérivés</strong> de l'ENSPM Maroua.</p>
-        <p class="about-text">Votez pour votre <strong>Miss Terra Viva</strong> et votre <strong>Master Terra Viva</strong> 2026 — seulement <strong>100 FCFA</strong> via Orange Money ou MTN MoMo.</p>
+        <p class="about-text">Votez pour votre <strong>Miss Terra Viva</strong> et votre <strong>Master Terra Viva</strong> 2026 — seulement <strong>25 FCFA</strong> via Orange Money ou MTN MoMo.</p>
         <p style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gold);font-size:15px;">"Notre Culture au Cœur de l'Ingénierie"</p>
       </div>
       <div class="about-cards">
         <div class="about-card"><div class="about-card-icon">👑</div><div class="about-card-num" id="aboutMissCount">—</div><div class="about-card-label">Miss candidates</div></div>
         <div class="about-card"><div class="about-card-icon">🌍</div><div class="about-card-num" id="aboutMasterCount">—</div><div class="about-card-label">Master candidates</div></div>
-        <div class="about-card"><div class="about-card-icon">📱</div><div class="about-card-num">100F</div><div class="about-card-label">Prix du vote</div></div>
+        <div class="about-card"><div class="about-card-icon">📱</div><div class="about-card-num">25F</div><div class="about-card-label">Prix du vote</div></div>
         <div class="about-card"><div class="about-card-icon">📅</div><div class="about-card-num">9 MAI</div><div class="about-card-label">Jour de l'événement</div></div>
       </div>
     </div>
@@ -463,18 +463,18 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;}
     <p class="profile-bio" id="profileBio"></p>
     <div class="vote-action-card">
       <h3 class="vote-action-title" id="voteActionTitle">Voter</h3>
-      <p class="vote-action-subtitle">100 FCFA — Orange Money ou MTN MoMo</p>
+      <p class="vote-action-subtitle">25 FCFA — Orange Money ou MTN MoMo</p>
       <div class="payment-methods">
         <div class="payment-option" id="opt-orange" onclick="selectPayment('orange')">
           <div class="payment-logo orange-logo">OM</div>
-          <div><div class="payment-name">Orange Money</div><div class="payment-price">100 FCFA</div></div>
+          <div><div class="payment-name">Orange Money</div><div class="payment-price">25 FCFA</div></div>
         </div>
         <div class="payment-option" id="opt-mtn" onclick="selectPayment('mtn')">
           <div class="payment-logo mtn-logo">MTN</div>
-          <div><div class="payment-name">MTN MoMo</div><div class="payment-price">100 FCFA</div></div>
+          <div><div class="payment-name">MTN MoMo</div><div class="payment-price">25 FCFA</div></div>
         </div>
       </div>
-      <button class="btn-vote-big" id="mainVoteBtn" onclick="openVoteModal()">🗳 Voter — 100 FCFA</button>
+      <button class="btn-vote-big" id="mainVoteBtn" onclick="openVoteModal()">🗳 Voter — 25 FCFA</button>
     </div>
     <div class="share-buttons">
       <button class="btn-share whatsapp" onclick="shareWhatsApp()">💬 Partager sur WhatsApp</button>
@@ -575,7 +575,7 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;}
     <!-- Step 1 — Payment method -->
     <div class="step active" id="step1">
       <h2 class="modal-title">Confirmer le vote</h2>
-      <p class="modal-subtitle">Terra Viva Royalty Day 2026 — 100 FCFA</p>
+      <p class="modal-subtitle">Terra Viva Royalty Day 2026 — 25 FCFA</p>
       <div class="modal-candidate-preview">
         <div class="modal-candidate-avatar" id="modalAvatar"></div>
         <div><div class="modal-candidate-name" id="modalName"></div><div class="modal-candidate-class" id="modalClass"></div></div>
@@ -583,8 +583,8 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;}
       <div class="form-group">
         <label class="form-label">Mode de paiement</label>
         <div class="payment-select-row">
-          <div class="pay-opt sel-orange" id="modal-orange" onclick="selectModalPayment('orange')"><div class="pay-opt-logo">🟠</div><div class="pay-opt-name">Orange Money</div><div class="pay-opt-price">100 FCFA</div></div>
-          <div class="pay-opt" id="modal-mtn" onclick="selectModalPayment('mtn')"><div class="pay-opt-logo">🟡</div><div class="pay-opt-name">MTN MoMo</div><div class="pay-opt-price">100 FCFA</div></div>
+          <div class="pay-opt sel-orange" id="modal-orange" onclick="selectModalPayment('orange')"><div class="pay-opt-logo">🟠</div><div class="pay-opt-name">Orange Money</div><div class="pay-opt-price">25 FCFA</div></div>
+          <div class="pay-opt" id="modal-mtn" onclick="selectModalPayment('mtn')"><div class="pay-opt-logo">🟡</div><div class="pay-opt-name">MTN MoMo</div><div class="pay-opt-price">25 FCFA</div></div>
         </div>
       </div>
       <button class="modal-btn modal-btn-gold" onclick="goToStep(2)">Continuer →</button>
@@ -675,7 +675,7 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;}
         </label>
       </div>
 
-      <button class="modal-btn modal-btn-gold" id="payBtn" onclick="initiatePayment()">Payer 100 FCFA →</button>
+      <button class="modal-btn modal-btn-gold" id="payBtn" onclick="initiatePayment()">Payer 25 FCFA →</button>
       <button class="modal-btn" onclick="goToStep(1)" style="background:none;border:1px solid var(--border);color:var(--muted);margin-top:6px;">← Retour</button>
     </div>
 
@@ -686,7 +686,7 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;}
       <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center;margin-bottom:16px;">
         <div style="font-size:42px;margin-bottom:6px;" id="paymentIcon">🟠</div>
         <div style="font-size:11px;color:var(--muted);margin-bottom:3px;">Montant</div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--gold);">100 FCFA</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--gold);">25 FCFA</div>
         <div style="font-size:11px;color:var(--muted);margin-top:6px;" id="phoneDisplay"></div>
         <div style="font-size:10px;color:var(--muted);margin-top:3px;" id="refDisplay"></div>
       </div>
@@ -928,7 +928,7 @@ async function initiatePayment() {
     startPolling(res.reference);
     showNotification('📱',`Demande envoyée au ${phone}`);
   } catch{/* shown by apiFetch */}
-  finally{btn.disabled=false;btn.textContent='Payer 100 FCFA →';}
+  finally{btn.disabled=false;btn.textContent='Payer 25 FCFA →';}
 }
 
 function startPolling(reference) {
@@ -1101,7 +1101,7 @@ function switchAdminTab(btn,panelId){
 function shareWhatsApp(){
   if(!selectedCandidate)return;
   const c=selectedCandidate,cat=c.category==='miss'?'Miss':'Master';
-  const msg=`👑 Votez pour ${c.name} — ${cat} Terra Viva 2026 !\n🏫 ENSPM Maroua · ${c.department}\n📱 Seulement 100 FCFA via Orange Money ou MTN MoMo\n\n📅 Samedi 9 Mai 2026 · 13H00\n📍 Alliance Française de Garoua, Antenne de Maroua\n\n🌿 "Notre Culture au Cœur de l'Ingénierie"`;
+  const msg=`👑 Votez pour ${c.name} — ${cat} Terra Viva 2026 !\n🏫 ENSPM Maroua · ${c.department}\n📱 Seulement 25 FCFA via Orange Money ou MTN MoMo\n\n📅 Samedi 9 Mai 2026 · 13H00\n📍 Alliance Française de Garoua, Antenne de Maroua\n\n🌿 "Notre Culture au Cœur de l'Ingénierie"`;
   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
 }
 function shareFacebook(){
