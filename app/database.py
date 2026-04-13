@@ -3,7 +3,7 @@ import aiosqlite
 import asyncio
 import ssl
 
-# FIX: Import asyncpg at module level for exception handling
+# Import asyncpg at module level for exception handling
 try:
     import asyncpg
 except ImportError:
@@ -117,7 +117,8 @@ class DB:
                 has_returning = "returning" in query.lower()
                 
                 if is_insert and not has_returning:
-                    # For INSERTs without RETURNING, try to add RETURNING id
+                    # Try to add RETURNING id to get the lastrowid
+                    # This may fail for tables without id column (like settings table)
                     q_with_returning = q + " RETURNING id"
                     try:
                         row = await conn.fetchrow(q_with_returning, *params)
@@ -125,10 +126,12 @@ class DB:
                     except Exception as e:
                         # If RETURNING id fails (no id column), just execute without it
                         error_str = str(e).lower()
-                        if "id" in error_str and ("does not exist" in error_str or "undefinedcolumn" in error_str):
+                        if "column" in error_str and ("does not exist" in error_str or "undefinedcolumn" in error_str):
+                            # Table doesn't have an id column, execute without RETURNING
                             await conn.execute(q, *params)
                             return DBResult()
                         else:
+                            # Some other error, re-raise
                             raise
                 else:
                     # For UPDATE, DELETE, or INSERT with existing RETURNING
@@ -169,7 +172,7 @@ async def init_db():
     if is_sqlite:
         await db.executescript("PRAGMA journal_mode=WAL;")
 
-    # FIX: For PostgreSQL, drop existing tables to ensure clean schema with id columns
+    # For PostgreSQL, drop existing tables to ensure clean schema with id columns
     # WARNING: This will delete existing data! Remove this in production after first deploy.
     if not is_sqlite:
         drop_tables = """
