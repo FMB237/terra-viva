@@ -67,8 +67,10 @@ http://localhost:8000/redoc    # Documentation API ReDoc
 ## 🔑 Accès Admin
 
 - **URL** : Cliquer sur "Admin" dans la nav
-- **Username** : `admin`
-- **Password** : `admin123`  ⚠️ *Changer en production !*
+- **Username** : `Miguel`
+- **Password** : `Th@9Sand5uNny`
+
+> ⚠️ **Important** : Changer ces credentials en production via la base de données !
 
 ---
 
