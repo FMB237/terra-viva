@@ -9,6 +9,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from contextlib import asynccontextmanager
 import jwt
+from slowapi import SlowAPI, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.database import init_db
 from app.routers import candidates, votes, payments, admin, auth
@@ -17,6 +21,8 @@ SECRET_KEY = os.getenv("SECRET_KEY", "terra-viva-enspm-secret-change-in-prod")
 ALGORITHM  = "HS256"
 security   = HTTPBearer()
 
+# Rate limiter: 5 requests per minute per IP for login
+limiter = SlowAPI(key_func=get_remote_address, default_limits=["100 per minute"])
 
 def verify_admin_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
@@ -46,12 +52,19 @@ app = FastAPI(
     redoc_url=None if os.getenv("DISABLE_DOCS", "false") == "true" else "/redoc",
 )
 
+# Add rate limiter middleware
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+
+# CORS - restrict to specific domains in production
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:8000,http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
