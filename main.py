@@ -14,7 +14,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-from app.database import init_db
+from app.database import init_db, db as _db_instance
 
 SECRET_KEY = os.getenv("SECRET_KEY", "terra-viva-enspm-secret-change-in-prod")
 ALGORITHM  = "HS256"
@@ -41,7 +41,14 @@ def verify_admin_token(credentials: HTTPAuthorizationCredentials = Depends(secur
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    yield
+    try:
+        yield
+    finally:
+        # Close DB pools on shutdown
+        try:
+            await _db_instance.close()
+        except Exception:
+            pass
 
 
 app = FastAPI(

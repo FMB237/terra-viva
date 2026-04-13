@@ -9,7 +9,6 @@ Payments router — Orange Money & MTN MoMo via Campay
 from fastapi import APIRouter, Depends, HTTPException, Request
 from app.database import get_db
 from app.schemas import PaymentInitiate, PaymentCallback, PaymentOut
-import aiosqlite
 import uuid, os, json
 from datetime import datetime
 
@@ -70,13 +69,12 @@ async def _get_campay_status(reference: str) -> str:
 # ── DB helpers ────────────────────────────────────────────────────────────────
 async def _get_or_create_voter(db, data: PaymentInitiate) -> dict:
     if data.matricule:
-        cur = await db.execute(
+        voter = await db.fetch_one(
             "SELECT * FROM voters WHERE phone=? OR (matricule IS NOT NULL AND matricule=?)",
             (data.phone, data.matricule),
         )
     else:
-        cur = await db.execute("SELECT * FROM voters WHERE phone=?", (data.phone,))
-    voter = await cur.fetchone()
+        voter = await db.fetch_one("SELECT * FROM voters WHERE phone=?", (data.phone,))
 
     if voter:
         await db.execute(
@@ -93,13 +91,13 @@ async def _get_or_create_voter(db, data: PaymentInitiate) -> dict:
     )
     await db.commit()
     if data.matricule:
-        cur = await db.execute(
+        voter = await db.fetch_one(
             "SELECT * FROM voters WHERE phone=? OR (matricule IS NOT NULL AND matricule=?)",
             (data.phone, data.matricule),
         )
     else:
-        cur = await db.execute("SELECT * FROM voters WHERE phone=?", (data.phone,))
-    return dict(await cur.fetchone())
+        voter = await db.fetch_one("SELECT * FROM voters WHERE phone=?", (data.phone,))
+    return dict(voter)
 
 
 async def _record_vote(db, candidate_id, voter, category, provider, payment_ref, ip="webhook"):
@@ -119,8 +117,7 @@ async def _record_vote(db, candidate_id, voter, category, provider, payment_ref,
 
 
 async def _finalize_vote(db, payment: dict):
-    cur = await db.execute("SELECT category FROM candidates WHERE id=?", (payment["candidate_id"],))
-    candidate = await cur.fetchone()
+    candidate = await db.fetch_one("SELECT category FROM candidates WHERE id=?", (payment["candidate_id"],))
     if not candidate:
         return
 
@@ -133,13 +130,12 @@ async def _finalize_vote(db, payment: dict):
     matricule = payment["voter_matricule"]
 
     if matricule and matricule != phone:
-        cur = await db.execute(
+        voter = await db.fetch_one(
             "SELECT * FROM voters WHERE phone=? OR (matricule IS NOT NULL AND matricule=?)",
             (phone, matricule),
         )
     else:
-        cur = await db.execute("SELECT * FROM voters WHERE phone=?", (phone,))
-    voter = await cur.fetchone()
+        voter = await db.fetch_one("SELECT * FROM voters WHERE phone=?", (phone,))
 
     if not voter:
         await db.execute(
@@ -149,8 +145,7 @@ async def _finalize_vote(db, payment: dict):
              None if matricule == phone else matricule),
         )
         await db.commit()
-        cur = await db.execute("SELECT * FROM voters WHERE phone=?", (phone,))
-        voter = await cur.fetchone()
+        voter = await db.fetch_one("SELECT * FROM voters WHERE phone=?", (phone,))
 
     if voter:
         await _record_vote(
@@ -162,26 +157,23 @@ async def _finalize_vote(db, payment: dict):
 # ── ROUTES ────────────────────────────────────────────────────────────────────
 
 @router.post("/initiate", response_model=PaymentOut)
-async def initiate_payment(data: PaymentInitiate, db: aiosqlite.Connection = Depends(get_db)):
+async def initiate_payment(data: PaymentInitiate, db = Depends(get_db)):
     if data.is_student and not data.matricule:
         raise HTTPException(400, "Le matricule est requis pour les étudiants")
 
-    cur = await db.execute("SELECT value FROM settings WHERE key='voting_open'")
-    row = await cur.fetchone()
+    row = await db.fetch_one("SELECT value FROM settings WHERE key='voting_open'")
     if not row or row["value"] != "true":
         raise HTTPException(403, "Les votes sont actuellement fermés")
 
     pk = "orange_money_enabled" if data.provider == "orange_money" else "mtn_momo_enabled"
-    cur = await db.execute("SELECT value FROM settings WHERE key=?", (pk,))
-    row = await cur.fetchone()
+    row = await db.fetch_one("SELECT value FROM settings WHERE key=?", (pk,))
     if not row or row["value"] != "true":
         raise HTTPException(403, f"{data.provider} est désactivé")
 
-    cur = await db.execute(
+    candidate = await db.fetch_one(
         "SELECT id,name,category FROM candidates WHERE id=? AND status='active'",
         (data.candidate_id,),
     )
-    candidate = await cur.fetchone()
     if not candidate:
         raise HTTPException(404, "Candidat introuvable")
 
@@ -191,11 +183,10 @@ async def initiate_payment(data: PaymentInitiate, db: aiosqlite.Connection = Dep
         raise HTTPException(409, f"Vous avez déjà voté pour {candidate['category'].upper()}")
 
     # Paiement pending existant ?
-    cur = await db.execute(
+    existing = await db.fetch_one(
         "SELECT * FROM payments WHERE voter_matricule=? AND candidate_id=? AND status='pending'",
         (data.matricule or data.phone, data.candidate_id),
     )
-    existing = await cur.fetchone()
     if existing:
         return PaymentOut(
             reference=existing["reference"], status=existing["status"],
@@ -232,10 +223,9 @@ async def initiate_payment(data: PaymentInitiate, db: aiosqlite.Connection = Dep
 
 
 @router.post("/callback")
-async def payment_callback(data: PaymentCallback, db: aiosqlite.Connection = Depends(get_db)):
+async def payment_callback(data: PaymentCallback, db = Depends(get_db)):
     """Webhook Campay — POST https://terra-viva.onrender.com/api/payments/callback"""
-    cur = await db.execute("SELECT * FROM payments WHERE reference=?", (data.reference,))
-    payment = await cur.fetchone()
+    payment = await db.fetch_one("SELECT * FROM payments WHERE reference=?", (data.reference,))
     if not payment:
         raise HTTPException(404, "Référence introuvable")
 
@@ -257,10 +247,9 @@ async def payment_callback(data: PaymentCallback, db: aiosqlite.Connection = Dep
 
 
 @router.get("/status/{reference}")
-async def payment_status(reference: str, db: aiosqlite.Connection = Depends(get_db)):
+async def payment_status(reference: str, db = Depends(get_db)):
     """Polling frontend toutes les 3s."""
-    cur = await db.execute("SELECT * FROM payments WHERE reference=?", (reference,))
-    row = await cur.fetchone()
+    row = await db.fetch_one("SELECT * FROM payments WHERE reference=?", (reference,))
     if not row:
         raise HTTPException(404, "Référence introuvable")
 

@@ -2,16 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.database import get_db
 from app.schemas import CandidateCreate, CandidateOut, CandidateUpdate
 from typing import Optional
-import aiosqlite
 
 router = APIRouter()
 
 
-async def get_vote_counts(db: aiosqlite.Connection) -> dict:
-    cursor = await db.execute(
+async def get_vote_counts(db) -> dict:
+    rows = await db.fetch_all(
         "SELECT candidate_id, COUNT(*) as cnt FROM votes GROUP BY candidate_id"
     )
-    rows = await cursor.fetchall()
     return {r["candidate_id"]: r["cnt"] for r in rows}
 
 
@@ -19,7 +17,7 @@ async def get_vote_counts(db: aiosqlite.Connection) -> dict:
 async def list_candidates(
     category: Optional[str] = None,
     status: str = "active",
-    db: aiosqlite.Connection = Depends(get_db),
+    db = Depends(get_db),
 ):
     query = "SELECT * FROM candidates WHERE status = ?"
     params: list = [status]
@@ -28,8 +26,7 @@ async def list_candidates(
         params.append(category)
     query += " ORDER BY category, id"
 
-    cursor = await db.execute(query, params)
-    rows = await cursor.fetchall()
+    rows = await db.fetch_all(query, params)
     vote_counts = await get_vote_counts(db)
 
     by_category: dict[str, list] = {"miss": [], "master": []}
@@ -55,10 +52,9 @@ async def list_candidates(
 
 @router.get("/{candidate_id}", response_model=CandidateOut)
 async def get_candidate(
-    candidate_id: int, db: aiosqlite.Connection = Depends(get_db)
+    candidate_id: int, db = Depends(get_db)
 ):
-    cursor = await db.execute("SELECT * FROM candidates WHERE id = ?", (candidate_id,))
-    row = await cursor.fetchone()
+    row = await db.fetch_one("SELECT * FROM candidates WHERE id = ?", (candidate_id,))
     if not row:
         raise HTTPException(status_code=404, detail="Candidat introuvable")
 
@@ -67,7 +63,7 @@ async def get_candidate(
     c["vote_count"] = vote_counts.get(c["id"], 0)
 
     # Compute rank within category
-    cursor2 = await db.execute(
+    ranked_rows = await db.fetch_all(
         """SELECT candidate_id, COUNT(*) as cnt
            FROM votes
            WHERE candidate_id IN (SELECT id FROM candidates WHERE category = ? AND status = 'active')
@@ -75,7 +71,6 @@ async def get_candidate(
            ORDER BY cnt DESC""",
         (c["category"],),
     )
-    ranked_rows = await cursor2.fetchall()
     rank_ids = [r["candidate_id"] for r in ranked_rows]
 
     if c["id"] in rank_ids:
@@ -90,9 +85,9 @@ async def get_candidate(
 
 @router.post("/", response_model=CandidateOut, status_code=201)
 async def create_candidate(
-    data: CandidateCreate, db: aiosqlite.Connection = Depends(get_db)
+    data: CandidateCreate, db = Depends(get_db)
 ):
-    cursor = await db.execute(
+    res = await db.execute(
         """INSERT INTO candidates (name, category, department, year, age, bio, quote, photo_url, status)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
@@ -101,14 +96,14 @@ async def create_candidate(
         ),
     )
     await db.commit()
-    return await get_candidate(cursor.lastrowid, db)
+    return await get_candidate(res.lastrowid, db)
 
 
 @router.put("/{candidate_id}", response_model=CandidateOut)
 async def update_candidate(
     candidate_id: int,
     data: CandidateUpdate,
-    db: aiosqlite.Connection = Depends(get_db),
+    db = Depends(get_db),
 ):
     # BUG FIX: model_dump(exclude_none=True) instead of manual dict comp
     # to correctly exclude None while allowing falsy values like 0 or ""
@@ -125,7 +120,7 @@ async def update_candidate(
 
 @router.delete("/{candidate_id}")
 async def delete_candidate(
-    candidate_id: int, db: aiosqlite.Connection = Depends(get_db)
+    candidate_id: int, db = Depends(get_db)
 ):
     await db.execute("DELETE FROM candidates WHERE id = ?", (candidate_id,))
     await db.commit()

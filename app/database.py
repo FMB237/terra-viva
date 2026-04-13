@@ -1,19 +1,130 @@
-import aiosqlite
 import os
+import aiosqlite
+import asyncio
 
 DB_PATH = os.getenv("DB_PATH", "terra_viva.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///" + DB_PATH)
+
+# Simple DB adapter that supports both sqlite (aiosqlite) and Postgres (asyncpg)
+# Provides async methods: fetch_one, fetch_all, execute, executescript, commit
+
+class DBResult:
+    def __init__(self, lastrowid=None):
+        self.lastrowid = lastrowid
+
+
+class DB:
+    def __init__(self, database_url: str):
+        self.database_url = database_url
+        self.is_sqlite = database_url.startswith("sqlite") or database_url.startswith("sqlite://")
+        self.sqlite_path = DB_PATH
+        self._pool = None
+
+    async def connect(self):
+        if not self.is_sqlite:
+            import asyncpg
+            self._pool = await asyncpg.create_pool(self.database_url)
+
+    async def close(self):
+        if self._pool:
+            await self._pool.close()
+
+    def _convert_placeholders(self, query: str):
+        # Replace sqlite-style ? placeholders with $1, $2, ... for asyncpg
+        parts = []
+        idx = 1
+        i = 0
+        while True:
+            j = query.find("?", i)
+            if j == -1:
+                parts.append(query[i:])
+                break
+            parts.append(query[i:j])
+            parts.append(f"${idx}")
+            idx += 1
+            i = j + 1
+        return "".join(parts)
+
+    async def fetch_one(self, query: str, params: tuple | list | None = None):
+        params = params or []
+        if self.is_sqlite:
+            async with aiosqlite.connect(self.sqlite_path) as conn:
+                conn.row_factory = aiosqlite.Row
+                cur = await conn.execute(query, tuple(params))
+                row = await cur.fetchone()
+                return row
+        else:
+            async with self._pool.acquire() as conn:
+                q = self._convert_placeholders(query)
+                row = await conn.fetchrow(q, *params)
+                return row
+
+    async def fetch_all(self, query: str, params: tuple | list | None = None):
+        params = params or []
+        if self.is_sqlite:
+            async with aiosqlite.connect(self.sqlite_path) as conn:
+                conn.row_factory = aiosqlite.Row
+                cur = await conn.execute(query, tuple(params))
+                rows = await cur.fetchall()
+                return rows
+        else:
+            async with self._pool.acquire() as conn:
+                q = self._convert_placeholders(query)
+                rows = await conn.fetch(q, *params)
+                return rows
+
+    async def execute(self, query: str, params: tuple | list | None = None):
+        params = params or []
+        if self.is_sqlite:
+            async with aiosqlite.connect(self.sqlite_path) as conn:
+                conn.row_factory = aiosqlite.Row
+                cur = await conn.execute(query, tuple(params))
+                await conn.commit()
+                last = getattr(cur, 'lastrowid', None)
+                return DBResult(lastrowid=last)
+        else:
+            async with self._pool.acquire() as conn:
+                q = query
+                # If params present, convert placeholders
+                if params:
+                    q = self._convert_placeholders(query)
+                # For INSERT, return the inserted id when possible
+                if query.strip().lower().startswith('insert') and 'returning' not in query.lower():
+                    q = q + ' RETURNING id'
+                    row = await conn.fetchrow(self._convert_placeholders(q), *params)
+                    return DBResult(lastrowid=row['id'] if row else None)
+                else:
+                    await conn.execute(q, *params)
+                    return DBResult()
+
+    async def executescript(self, script: str):
+        if self.is_sqlite:
+            async with aiosqlite.connect(self.sqlite_path) as conn:
+                conn.row_factory = aiosqlite.Row
+                await conn.executescript(script)
+                await conn.commit()
+        else:
+            # asyncpg supports multiple statements in execute
+            async with self._pool.acquire() as conn:
+                await conn.execute(script)
+
+    async def commit(self):
+        # No-op: individual operations commit immediately in both adapters
+        return
+
+
+# module-level DB instance
+db = DB(DATABASE_URL)
 
 
 async def get_db():
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        yield db
+    # Returns the DB adapter instance (stateless; acquires connections per call)
+    yield db
 
 
 async def init_db():
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        await db.executescript("""
+    # Initialize DB schema using the same script as before
+    schema = """
             PRAGMA journal_mode=WAL;
 
             CREATE TABLE IF NOT EXISTS candidates (
@@ -144,42 +255,45 @@ async def init_db():
             VALUES(1, 'Miguel',
                    '$2b$12$TB6Oq.ucMurr3duerrjKGufn8VkclzG.HcwGsfldH3s2fwH1w0/FO',
                    'super_admin');
-        """)
-        # Migrate old voters schema if needed (remove date_of_birth, allow optional matricule)
-        cur = await db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='voters'")
-        if await cur.fetchone():
-            cur = await db.execute("PRAGMA table_info(voters)")
-            cols = [r["name"] for r in await cur.fetchall()]
-            if "date_of_birth" in cols or "full_name" not in cols or "is_student" not in cols:
-                await db.executescript("""
-                    CREATE TABLE IF NOT EXISTS voters_new (
-                        id               INTEGER PRIMARY KEY AUTOINCREMENT,
-                        full_name        TEXT,
-                        email            TEXT,
-                        phone            TEXT NOT NULL,
-                        is_student       INTEGER DEFAULT 0,
-                        matricule        TEXT UNIQUE,
-                        has_voted_miss   INTEGER DEFAULT 0,
-                        has_voted_master INTEGER DEFAULT 0,
-                        created_at       TEXT DEFAULT (datetime('now'))
-                    );
-                """)
-                await db.execute("""
-                    INSERT INTO voters_new (id, full_name, email, phone, is_student, matricule, has_voted_miss, has_voted_master, created_at)
-                    SELECT id,
-                           NULL as full_name,
-                           NULL as email,
-                           COALESCE(phone, '') as phone,
-                           CASE WHEN matricule IS NOT NULL AND matricule != '' THEN 1 ELSE 0 END as is_student,
-                           matricule,
-                           has_voted_miss,
-                           has_voted_master,
-                           created_at
-                    FROM voters
-                """)
-                await db.executescript("""
-                    DROP TABLE voters;
-                    ALTER TABLE voters_new RENAME TO voters;
-                """)
-        await db.commit()
-        print("✅ DB initialisée — Terra Viva Royalty Day · ENSPM Maroua · 9 Mai 2026")
+            """
+    # Create/Connect depending on adapter
+    await db.connect()
+    await db.executescript(schema)
+
+    # Migrate old voters schema if needed
+    row = await db.fetch_one("SELECT name FROM sqlite_master WHERE type='table' AND name='voters'")
+    if row:
+        cols_rows = await db.fetch_all("PRAGMA table_info(voters)")
+        cols = [r["name"] if isinstance(r, dict) or hasattr(r, 'get') else r[1] for r in cols_rows]
+        if "date_of_birth" in cols or "full_name" not in cols or "is_student" not in cols:
+            await db.executescript("""
+                CREATE TABLE IF NOT EXISTS voters_new (
+                    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+                    full_name        TEXT,
+                    email            TEXT,
+                    phone            TEXT NOT NULL,
+                    is_student       INTEGER DEFAULT 0,
+                    matricule        TEXT UNIQUE,
+                    has_voted_miss   INTEGER DEFAULT 0,
+                    has_voted_master INTEGER DEFAULT 0,
+                    created_at       TEXT DEFAULT (datetime('now'))
+                );
+            """)
+            await db.execute("""
+                INSERT INTO voters_new (id, full_name, email, phone, is_student, matricule, has_voted_miss, has_voted_master, created_at)
+                SELECT id,
+                       NULL as full_name,
+                       NULL as email,
+                       COALESCE(phone, '') as phone,
+                       CASE WHEN matricule IS NOT NULL AND matricule != '' THEN 1 ELSE 0 END as is_student,
+                       matricule,
+                       has_voted_miss,
+                       has_voted_master,
+                       created_at
+                FROM voters
+            """)
+            await db.executescript("""
+                DROP TABLE voters;
+                ALTER TABLE voters_new RENAME TO voters;
+            """)
+    print("✅ DB initialisée — Terra Viva Royalty Day · ENSPM Maroua · 9 Mai 2026")

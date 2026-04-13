@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from app.database import get_db
 from app.schemas import AdminLogin, TokenOut
-import aiosqlite, jwt, os
+import jwt, os
 from datetime import datetime, timedelta
 router = APIRouter()
 
@@ -56,9 +56,8 @@ def verify_password_plain(plain: str, hashed: str) -> bool:
 
 @router.post("/login", response_model=TokenOut)
 @defer_limit("5 per minute")
-async def login(request: Request, data: AdminLogin, db: aiosqlite.Connection = Depends(get_db)):
-    cur = await db.execute("SELECT * FROM admins WHERE username = ?", (data.username,))
-    admin = await cur.fetchone()
+async def login(request: Request, data: AdminLogin, db = Depends(get_db)):
+    admin = await db.fetch_one("SELECT * FROM admins WHERE username = ?", (data.username,))
     if not admin or not verify_password_plain(data.password, admin["password_hash"]):
         raise HTTPException(401, "Identifiants incorrects")
 

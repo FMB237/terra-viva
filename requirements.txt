@@ -39,3 +39,4 @@ uvloop==0.22.1
 watchfiles==1.1.1
 websockets==16.0
 slowapi==0.1.9
+asyncpg==0.27.0
