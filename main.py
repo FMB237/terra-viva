@@ -19,7 +19,6 @@ security   = HTTPBearer()
 
 
 def verify_admin_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Vérifie le JWT admin sur toutes les routes /api/admin/*"""
     try:
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
         role = payload.get("role", "")
@@ -43,7 +42,6 @@ app = FastAPI(
     description="Plateforme de vote Miss & Master Terra Viva — ENSPM Maroua",
     version="1.0.0",
     lifespan=lifespan,
-    # ✅ Swagger désactivé en production
     docs_url=None if os.getenv("DISABLE_DOCS", "false") == "true" else "/docs",
     redoc_url=None if os.getenv("DISABLE_DOCS", "false") == "true" else "/redoc",
 )
@@ -64,18 +62,18 @@ TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")
 os.makedirs(TEMPLATES_DIR, exist_ok=True)
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
-# ── Public routes ──────────────────────────────────────────────────────────
+# ── Public routes ──────────────────────────────────────────────
 app.include_router(candidates.router, prefix="/api/candidates", tags=["candidates"])
 app.include_router(votes.router,      prefix="/api/votes",      tags=["votes"])
 app.include_router(payments.router,   prefix="/api/payments",   tags=["payments"])
 app.include_router(auth.router,       prefix="/api/auth",        tags=["auth"])
 
-# ── Protected admin routes — JWT requis ───────────────────────────────────
+# ── Protected admin routes ─────────────────────────────────────
 app.include_router(
     admin.router,
     prefix="/api/admin",
     tags=["admin"],
-    dependencies=[Depends(verify_admin_token)],  # ← toutes les routes admin protégées
+    dependencies=[Depends(verify_admin_token)],
 )
 
 
@@ -91,3 +89,58 @@ async def health():
         "event":  "Terra Viva Royalty Day",
         "school": "ENSPM Maroua",
     }
+
+
+# ══════════════════════════════════════════════════════════════
+# ⚠️  ENDPOINT TEMPORAIRE — SUPPRIMER APRÈS UTILISATION !
+# Appeler UNE SEULE FOIS puis supprimer ce bloc et redéployer
+# ══════════════════════════════════════════════════════════════
+@app.get("/init-admin-tv2026")
+async def setup_admin_once():
+    """
+    Change le compte admin :
+      username : Miguel
+      password : Th@9Sand5uNny
+    SUPPRIMER APRÈS UTILISATION !
+    """
+    import bcrypt
+    import aiosqlite
+
+    DB_PATH  = os.getenv("DB_PATH", "terra_viva.db")
+    new_user = "Miguel"
+    new_pass = "Th@9Sand5uNny"
+
+    hashed = bcrypt.hashpw(new_pass.encode(), bcrypt.gensalt(12)).decode()
+
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+
+        # Vérifier si l'ancien admin existe
+        cur = await db.execute("SELECT id, username FROM admins")
+        existing = await cur.fetchall()
+        before   = [dict(r) for r in existing]
+
+        # Mettre à jour tous les admins existants (ou créer si vide)
+        if before:
+            await db.execute(
+                "UPDATE admins SET username=?, password_hash=? WHERE role='super_admin'",
+                (new_user, hashed),
+            )
+        else:
+            await db.execute(
+                "INSERT INTO admins (username, password_hash, role) VALUES (?, ?, 'super_admin')",
+                (new_user, hashed),
+            )
+
+        await db.commit()
+
+        cur = await db.execute("SELECT id, username, role FROM admins")
+        after = [dict(r) for r in await cur.fetchall()]
+
+    return {
+        "message":  "✅ Admin mis à jour avec succès",
+        "before":   before,
+        "after":    after,
+        "warning":  "⚠️ SUPPRIMEZ CET ENDPOINT ET REDÉPLOYEZ MAINTENANT !",
+    }
+# ══════════════════════════════════════════════════════════════
