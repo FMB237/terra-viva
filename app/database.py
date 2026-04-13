@@ -106,14 +106,24 @@ class DB:
                 raise RuntimeError("PostgreSQL pool not initialized. Call connect() first.")
             async with self._pool.acquire() as conn:
                 q = self._convert_placeholders(query)
-                if (
-                    query.strip().lower().startswith("insert")
-                    and "returning" not in query.lower()
-                ):
+                
+                # Check if this is an INSERT without RETURNING clause
+                is_insert = query.strip().lower().startswith("insert")
+                has_returning = "returning" in query.lower()
+                
+                if is_insert and not has_returning:
+                    # For INSERTs without RETURNING, add RETURNING id to get the lastrowid
+                    # But we need to check if the table has an id column
                     q = q + " RETURNING id"
-                    row = await conn.fetchrow(q, *params)
-                    return DBResult(lastrowid=row["id"] if row else None)
+                    try:
+                        row = await conn.fetchrow(q, *params)
+                        return DBResult(lastrowid=row["id"] if row else None)
+                    except asyncpg.exceptions.UndefinedColumnError:
+                        # If id column doesn't exist or no primary key, just execute without returning
+                        await conn.execute(self._convert_placeholders(query), *params)
+                        return DBResult()
                 else:
+                    # For UPDATE, DELETE, or INSERT with existing RETURNING
                     await conn.execute(q, *params)
                     return DBResult()
 
@@ -253,6 +263,8 @@ async def init_db():
                 "INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", [k, v]
             )
         else:
+            # FIX: Use proper PostgreSQL syntax with explicit conflict target
+            # The conflict target must be the primary key or unique constraint column
             await db.execute(
                 "INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO NOTHING",
                 [k, v],
@@ -364,8 +376,11 @@ async def init_db():
                 list(row),
             )
         else:
+            # FIX: Use proper PostgreSQL syntax with explicit column list and conflict target
             await db.execute(
-                "INSERT INTO candidates (id, name, category, department, year, age, bio, quote, photo_url, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT (id) DO NOTHING",
+                """INSERT INTO candidates (id, name, category, department, year, age, bio, quote, photo_url, status) 
+                   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
+                   ON CONFLICT (id) DO NOTHING""",
                 list(row),
             )
 
@@ -380,8 +395,12 @@ async def init_db():
             [admin_pw],
         )
     else:
+        # FIX: Use proper PostgreSQL upsert syntax with explicit conflict target
         await db.execute(
-            "INSERT INTO admins (id, username, password_hash, role) VALUES (1, 'Miguel', $1, 'super_admin') ON CONFLICT (id) DO UPDATE SET username = 'Miguel', password_hash = $1, role = 'super_admin'",
+            """INSERT INTO admins (id, username, password_hash, role) 
+               VALUES (1, 'Miguel', $1, 'super_admin') 
+               ON CONFLICT (id) DO UPDATE SET username = 'Miguel', password_hash = $1, role = 'super_admin'""",
             [admin_pw],
         )
     print("DB initialisee - Terra Viva Royalty Day - ENSPM Maroua - 9 Mai 2026")
+    print("by FMB237")
