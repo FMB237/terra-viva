@@ -3,7 +3,8 @@ from app.database import get_db
 from app.schemas import AdminLogin, TokenOut
 import aiosqlite, jwt, os
 from datetime import datetime, timedelta
-from slowapi import Limiter
+from slowapi import Limiter as LimiterType
+from main import limiter
 
 router = APIRouter()
 
@@ -11,7 +12,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "terra-viva-enspm-secret-change-in-prod")
 ALGORITHM = "HS256"
 
 # Get limiter from app state (set in main.py)
-def get_limiter(request: Request) -> Limiter:
+def get_limiter(request: Request) -> LimiterType:
     return request.app.state.limiter
 
 
