@@ -3,10 +3,35 @@ from app.database import get_db
 from app.schemas import AdminLogin, TokenOut
 import aiosqlite, jwt, os
 from datetime import datetime, timedelta
-from slowapi import Limiter as LimiterType
-from main import limiter
-
 router = APIRouter()
+
+# helper: defer applying slowapi limiter until request time to avoid circular imports
+from functools import wraps
+
+def defer_limit(limit_value):
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            # find the Request instance
+            request = kwargs.get("request")
+            if request is None:
+                for a in args:
+                    try:
+                        # FastAPI Request is starlette.requests.Request
+                        from fastapi import Request as FastAPIRequest
+                        if isinstance(a, FastAPIRequest):
+                            request = a
+                            break
+                    except Exception:
+                        continue
+            if request is None:
+                # no request found; call the original function
+                return await func(*args, **kwargs)
+            limiter = request.app.state.limiter
+            wrapped = limiter.limit(limit_value)(func)
+            return await wrapped(*args, **kwargs)
+        return wrapper
+    return decorator
 
 SECRET_KEY = os.getenv("SECRET_KEY", "terra-viva-enspm-secret-change-in-prod")
 ALGORITHM = "HS256"
@@ -33,7 +58,7 @@ def verify_password_plain(plain: str, hashed: str) -> bool:
 
 
 @router.post("/login", response_model=TokenOut)
-@limiter.limit("5 per minute")
+@defer_limit("5 per minute")
 async def login(request: Request, data: AdminLogin, db: aiosqlite.Connection = Depends(get_db)):
     cur = await db.execute("SELECT * FROM admins WHERE username = ?", (data.username,))
     admin = await cur.fetchone()
