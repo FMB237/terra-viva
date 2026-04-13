@@ -1,5 +1,6 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, field_serializer
 from typing import Optional, Literal
+from datetime import datetime
 import re
 
 
@@ -40,7 +41,14 @@ class CandidateOut(BaseModel):
     status: str
     vote_count: int = 0
     rank: int = 0
-    created_at: str
+    created_at: datetime  # FIX: Accept datetime from PostgreSQL
+    
+    @field_serializer('created_at')
+    def serialize_created_at(self, v: datetime) -> str:
+        return v.isoformat()  # Convert to ISO string for JSON
+    
+    class Config:
+        from_attributes = True
 
 
 # ── VOTER ──────────────────────────────────────────
@@ -113,7 +121,11 @@ class VoteOut(BaseModel):
     candidate_name: str
     category: str
     payment_method: str
-    created_at: str
+    created_at: datetime  # FIX: Accept datetime from PostgreSQL
+    
+    @field_serializer('created_at')
+    def serialize_created_at(self, v: datetime) -> str:
+        return v.isoformat()
 
 
 # ── PAYMENT ────────────────────────────────────────
@@ -161,7 +173,11 @@ class PaymentOut(BaseModel):
     provider: str
     amount: int
     phone: str
-    created_at: str
+    created_at: datetime  # FIX: Accept datetime from PostgreSQL
+    
+    @field_serializer('created_at')
+    def serialize_created_at(self, v: datetime) -> str:
+        return v.isoformat()
 
 
 # ── RESULTS ────────────────────────────────────────

@@ -2,6 +2,7 @@ import os
 import aiosqlite
 import asyncio
 import ssl
+from datetime import datetime
 
 # Import asyncpg at module level for exception handling
 try:
@@ -29,6 +30,16 @@ class DB:
         )
         self.sqlite_path = DB_PATH
         self._pool = None
+
+    def _convert_row(self, row) -> dict:
+        """Convert database row to dict, handling datetime serialization"""
+        if row is None:
+            return None
+        result = dict(row)
+        for key, value in result.items():
+            if isinstance(value, datetime):
+                result[key] = value.isoformat()
+        return result
 
     async def connect(self):
         if self.is_postgres:
@@ -79,7 +90,7 @@ class DB:
             async with self._pool.acquire() as conn:
                 q = self._convert_placeholders(query)
                 row = await conn.fetchrow(q, *params)
-                return row
+                return self._convert_row(row)  # FIX: Convert datetime to string
 
     async def fetch_all(self, query: str, params: tuple | list | None = None):
         params = params or []
@@ -95,7 +106,7 @@ class DB:
             async with self._pool.acquire() as conn:
                 q = self._convert_placeholders(query)
                 rows = await conn.fetch(q, *params)
-                return rows
+                return [self._convert_row(row) for row in rows]  # FIX: Convert all rows
 
     async def execute(self, query: str, params: tuple | list | None = None):
         params = params or []
@@ -112,29 +123,22 @@ class DB:
             async with self._pool.acquire() as conn:
                 q = self._convert_placeholders(query)
                 
-                # Check if this is an INSERT without RETURNING clause
                 is_insert = query.strip().lower().startswith("insert")
                 has_returning = "returning" in query.lower()
                 
                 if is_insert and not has_returning:
-                    # Try to add RETURNING id to get the lastrowid
-                    # This may fail for tables without id column (like settings table)
                     q_with_returning = q + " RETURNING id"
                     try:
                         row = await conn.fetchrow(q_with_returning, *params)
                         return DBResult(lastrowid=row["id"] if row else None)
                     except Exception as e:
-                        # If RETURNING id fails (no id column), just execute without it
                         error_str = str(e).lower()
                         if "column" in error_str and ("does not exist" in error_str or "undefinedcolumn" in error_str):
-                            # Table doesn't have an id column, execute without RETURNING
                             await conn.execute(q, *params)
                             return DBResult()
                         else:
-                            # Some other error, re-raise
                             raise
                 else:
-                    # For UPDATE, DELETE, or INSERT with existing RETURNING
                     await conn.execute(q, *params)
                     return DBResult()
 
@@ -172,8 +176,6 @@ async def init_db():
     if is_sqlite:
         await db.executescript("PRAGMA journal_mode=WAL;")
 
-    # For PostgreSQL, drop existing tables to ensure clean schema with id columns
-    # WARNING: This will delete existing data! Remove this in production after first deploy.
     if not is_sqlite:
         drop_tables = """
         DROP TABLE IF EXISTS votes CASCADE;
