@@ -122,6 +122,9 @@ async def get_db():
 async def init_db():
     is_sqlite = db.is_sqlite
 
+    if not is_sqlite:
+        await db.connect()
+
     if is_sqlite:
         await db.executescript("PRAGMA journal_mode=WAL;")
 
