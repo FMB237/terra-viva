@@ -1,6 +1,14 @@
 import os
 import aiosqlite
 import asyncio
+import ssl
+from datetime import datetime
+
+# Import asyncpg at module level for exception handling
+try:
+    import asyncpg
+except ImportError:
+    asyncpg = None
 
 DB_PATH = os.getenv("DB_PATH", "terra_viva.db")
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///" + DB_PATH)
@@ -17,14 +25,54 @@ class DB:
         self.is_sqlite = database_url.startswith("sqlite") or database_url.startswith(
             "sqlite://"
         )
+        self.is_postgres = database_url.startswith("postgres://") or database_url.startswith(
+            "postgresql://"
+        )
         self.sqlite_path = DB_PATH
         self._pool = None
 
-    async def connect(self):
-        if not self.is_sqlite:
-            import asyncpg
+    def _convert_row(self, row) -> dict:
+        """Convert database row to dict, handling datetime serialization"""
+        if row is None:
+            return None
+        result = dict(row)
+        for key, value in result.items():
+            if isinstance(value, datetime):
+                result[key] = value.isoformat()
+        return result
 
-            self._pool = await asyncpg.create_pool(self.database_url)
+    def _convert_params(self, params: tuple | list) -> tuple:
+        """Convert ISO datetime strings to datetime objects for PostgreSQL"""
+        if self.is_sqlite:
+            return params
+        converted = []
+        for p in params:
+            if isinstance(p, str) and len(p) > 10 and 'T' in p:
+                # Check if it looks like ISO datetime
+                try:
+                    dt = datetime.fromisoformat(p.replace('Z', '+00:00'))
+                    converted.append(dt)
+                except ValueError:
+                    converted.append(p)
+            else:
+                converted.append(p)
+        return tuple(converted)
+
+    async def connect(self):
+        if self.is_postgres:
+            # SSL required for Render PostgreSQL
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            
+            self._pool = await asyncpg.create_pool(
+                self.database_url,
+                min_size=2,
+                max_size=10,
+                command_timeout=60,
+                max_inactive_connection_lifetime=300,
+                ssl=ssl_context
+            )
 
     async def close(self):
         if self._pool:
@@ -54,10 +102,13 @@ class DB:
                 row = await cur.fetchone()
                 return row
         else:
+            if not self._pool:
+                raise RuntimeError("PostgreSQL pool not initialized. Call connect() first.")
             async with self._pool.acquire() as conn:
                 q = self._convert_placeholders(query)
+                params = self._convert_params(params)  # FIX: Convert datetime strings
                 row = await conn.fetchrow(q, *params)
-                return row
+                return self._convert_row(row)
 
     async def fetch_all(self, query: str, params: tuple | list | None = None):
         params = params or []
@@ -68,10 +119,13 @@ class DB:
                 rows = await cur.fetchall()
                 return rows
         else:
+            if not self._pool:
+                raise RuntimeError("PostgreSQL pool not initialized. Call connect() first.")
             async with self._pool.acquire() as conn:
                 q = self._convert_placeholders(query)
+                params = self._convert_params(params)  # FIX: Convert datetime strings
                 rows = await conn.fetch(q, *params)
-                return rows
+                return [self._convert_row(row) for row in rows]
 
     async def execute(self, query: str, params: tuple | list | None = None):
         params = params or []
@@ -83,17 +137,27 @@ class DB:
                 last = getattr(cur, "lastrowid", None)
                 return DBResult(lastrowid=last)
         else:
+            if not self._pool:
+                raise RuntimeError("PostgreSQL pool not initialized. Call connect() first.")
             async with self._pool.acquire() as conn:
-                q = query
-                if params:
-                    q = self._convert_placeholders(query)
-                if (
-                    query.strip().lower().startswith("insert")
-                    and "returning" not in query.lower()
-                ):
-                    q = q + " RETURNING id"
-                    row = await conn.fetchrow(q, *params)
-                    return DBResult(lastrowid=row["id"] if row else None)
+                q = self._convert_placeholders(query)
+                params = self._convert_params(params)  # FIX: Convert datetime strings
+                
+                is_insert = query.strip().lower().startswith("insert")
+                has_returning = "returning" in query.lower()
+                
+                if is_insert and not has_returning:
+                    q_with_returning = q + " RETURNING id"
+                    try:
+                        row = await conn.fetchrow(q_with_returning, *params)
+                        return DBResult(lastrowid=row["id"] if row else None)
+                    except Exception as e:
+                        error_str = str(e).lower()
+                        if "column" in error_str and ("does not exist" in error_str or "undefinedcolumn" in error_str):
+                            await conn.execute(q, *params)
+                            return DBResult()
+                        else:
+                            raise
                 else:
                     await conn.execute(q, *params)
                     return DBResult()
@@ -105,8 +169,12 @@ class DB:
                 await conn.executescript(script)
                 await conn.commit()
         else:
+            if not self._pool:
+                raise RuntimeError("PostgreSQL pool not initialized. Call connect() first.")
             async with self._pool.acquire() as conn:
-                await conn.execute(script)
+                statements = [s.strip() for s in script.split(';') if s.strip()]
+                for stmt in statements:
+                    await conn.execute(stmt)
 
     async def commit(self):
         return
@@ -122,11 +190,23 @@ async def get_db():
 async def init_db():
     is_sqlite = db.is_sqlite
 
-    if not is_sqlite:
+    if db.is_postgres:
         await db.connect()
 
     if is_sqlite:
         await db.executescript("PRAGMA journal_mode=WAL;")
+
+    if not is_sqlite:
+        drop_tables = """
+        DROP TABLE IF EXISTS votes CASCADE;
+        DROP TABLE IF EXISTS payments CASCADE;
+        DROP TABLE IF EXISTS candidates CASCADE;
+        DROP TABLE IF EXISTS voters CASCADE;
+        DROP TABLE IF EXISTS admins CASCADE;
+        DROP TABLE IF EXISTS settings CASCADE;
+        """
+        await db.executescript(drop_tables)
+        print("Dropped existing PostgreSQL tables for clean recreation")
 
     if is_sqlite:
         candidates_schema = """CREATE TABLE IF NOT EXISTS candidates (
@@ -342,7 +422,9 @@ async def init_db():
             )
         else:
             await db.execute(
-                "INSERT INTO candidates (id, name, category, department, year, age, bio, quote, photo_url, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT (id) DO NOTHING",
+                """INSERT INTO candidates (id, name, category, department, year, age, bio, quote, photo_url, status) 
+                   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
+                   ON CONFLICT (id) DO NOTHING""",
                 list(row),
             )
 
@@ -358,7 +440,9 @@ async def init_db():
         )
     else:
         await db.execute(
-            "INSERT INTO admins (id, username, password_hash, role) VALUES (1, 'Miguel', $1, 'super_admin') ON CONFLICT (id) DO UPDATE SET username = 'Miguel', password_hash = $1, role = 'super_admin'",
+            """INSERT INTO admins (id, username, password_hash, role) 
+               VALUES (1, 'Miguel', $1, 'super_admin') 
+               ON CONFLICT (id) DO UPDATE SET username = 'Miguel', password_hash = $1, role = 'super_admin'""",
             [admin_pw],
         )
     print("DB initialisee - Terra Viva Royalty Day - ENSPM Maroua - 9 Mai 2026")

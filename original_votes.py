@@ -2,42 +2,20 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from app.database import get_db
 from app.schemas import VoteCreate, VoteOut, ResultsOut, ResultEntry
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 
 router = APIRouter()
 
 # BUG FIX: /results and /check MUST be registered before /{param} routes
 # to avoid FastAPI treating "results" as a path parameter value.
 
-
-def placeholder(db, index: int) -> str:
-    """Return the correct SQL placeholder based on DB type."""
-    is_sqlite = db.is_sqlite if hasattr(db, "is_sqlite") else True
-    return "?" if is_sqlite else f"${index}"
-
-
-def placeholders(db, count: int) -> str:
-    """Return a comma-separated list of placeholders for bulk inserts."""
-    is_sqlite = db.is_sqlite if hasattr(db, "is_sqlite") else True
-    if is_sqlite:
-        return ", ".join("?" * count)
-    return ", ".join(f"${i + 1}" for i in range(count))
-
-
 @router.get("/results", response_model=ResultsOut)
-async def get_results(db=Depends(get_db)):
-    is_sqlite = db.is_sqlite if hasattr(db, "is_sqlite") else True
-    p1 = "?" if is_sqlite else "$1"
-
-    row = await db.fetch_one(
-        f"SELECT value FROM settings WHERE key = {p1}", ("results_public",)
-    )
+async def get_results(db = Depends(get_db)):
+    row = await db.fetch_one("SELECT value FROM settings WHERE key = 'results_public'")
     if row is None or row["value"] != "true":
         raise HTTPException(403, "Les résultats ne sont pas encore disponibles publiquement")
 
-    row = await db.fetch_one(
-        f"SELECT value FROM settings WHERE key = {p1}", ("voting_open",)
-    )
+    row = await db.fetch_one("SELECT value FROM settings WHERE key = 'voting_open'")
     voting_open = row is not None and row["value"] == "true"
 
     rows = await db.fetch_all("""
@@ -91,12 +69,9 @@ async def get_results(db=Depends(get_db)):
 
 
 @router.get("/check/{matricule}")
-async def check_voter(matricule: str, db=Depends(get_db)):
-    is_sqlite = db.is_sqlite if hasattr(db, "is_sqlite") else True
-    p1 = "?" if is_sqlite else "$1"
-
+async def check_voter(matricule: str, db = Depends(get_db)):
     row = await db.fetch_one(
-        f"SELECT has_voted_miss, has_voted_master FROM voters WHERE matricule = {p1}",
+        "SELECT has_voted_miss, has_voted_master FROM voters WHERE matricule = ?",
         (matricule,),
     )
     if not row:
@@ -112,70 +87,43 @@ async def check_voter(matricule: str, db=Depends(get_db)):
 async def cast_vote(
     data: VoteCreate,
     request: Request,
-    db=Depends(get_db),
+    db = Depends(get_db),
 ):
-    is_sqlite = db.is_sqlite if hasattr(db, "is_sqlite") else True
-
-    def p(index: int) -> str:
-        return "?" if is_sqlite else f"${index}"
-
-    # --- 1. Check voting is open ---
-    row = await db.fetch_one(
-        f"SELECT value FROM settings WHERE key = {p(1)}", ("voting_open",)
-    )
+    row = await db.fetch_one("SELECT value FROM settings WHERE key = 'voting_open'")
     if row is None or row["value"] != "true":
         raise HTTPException(403, "Les votes sont actuellement fermés")
 
-    # --- 2. Check payment method is enabled ---
-    method_key = (
-        "orange_money_enabled" if data.payment_method == "orange_money" else "mtn_momo_enabled"
-    )
-    row = await db.fetch_one(
-        f"SELECT value FROM settings WHERE key = {p(1)}", (method_key,)
-    )
+    method_key = "orange_money_enabled" if data.payment_method == "orange_money" else "mtn_momo_enabled"
+    row = await db.fetch_one("SELECT value FROM settings WHERE key = ?", (method_key,))
     if row is None or row["value"] != "true":
         raise HTTPException(403, f"{data.payment_method} est désactivé")
 
-    # --- 3. Validate candidate ---
     candidate = await db.fetch_one(
-        f"SELECT * FROM candidates WHERE id = {p(1)} AND status = 'active'",
-        (data.candidate_id,),
+        "SELECT * FROM candidates WHERE id = ? AND status = 'active'", (data.candidate_id,)
     )
     if not candidate:
         raise HTTPException(404, "Candidat introuvable ou inactif")
     if candidate["category"] != data.category:
         raise HTTPException(400, "Catégorie du candidat incorrecte")
 
-    # --- 4. Validate matricule for students ---
     if data.is_student and not data.matricule:
         raise HTTPException(400, "Le matricule est requis pour les étudiants")
 
-    # --- 5. Find or create voter ---
     voter = None
     if data.matricule:
         voter = await db.fetch_one(
-            f"SELECT * FROM voters WHERE phone = {p(1)} OR (matricule IS NOT NULL AND matricule = {p(2)})",
+            "SELECT * FROM voters WHERE phone = ? OR (matricule IS NOT NULL AND matricule = ?)",
             (data.phone, data.matricule),
         )
     else:
-        voter = await db.fetch_one(
-            f"SELECT * FROM voters WHERE phone = {p(1)}", (data.phone,)
-        )
+        voter = await db.fetch_one("SELECT * FROM voters WHERE phone = ?", (data.phone,))
 
     if voter:
-        # --- 6. Check for duplicate vote ---
         col = "has_voted_miss" if data.category == "miss" else "has_voted_master"
         if voter[col]:
-            raise HTTPException(
-                409, f"Vous avez déjà voté dans la catégorie {data.category.upper()}"
-            )
-
-        # Update existing voter info
+            raise HTTPException(409, f"Vous avez déjà voté dans la catégorie {data.category.upper()}")
         await db.execute(
-            f"""UPDATE voters
-                SET full_name = {p(1)}, email = {p(2)}, phone = {p(3)},
-                    is_student = {p(4)}, matricule = {p(5)}
-                WHERE id = {p(6)}""",
+            "UPDATE voters SET full_name = ?, email = ?, phone = ?, is_student = ?, matricule = ? WHERE id = ?",
             (
                 data.full_name,
                 data.email,
@@ -187,10 +135,8 @@ async def cast_vote(
         )
         await db.commit()
     else:
-        # Insert new voter
         await db.execute(
-            f"""INSERT INTO voters (full_name, email, phone, is_student, matricule)
-                VALUES ({p(1)}, {p(2)}, {p(3)}, {p(4)}, {p(5)})""",
+            "INSERT INTO voters (full_name, email, phone, is_student, matricule) VALUES (?, ?, ?, ?, ?)",
             (
                 data.full_name,
                 data.email,
@@ -200,55 +146,32 @@ async def cast_vote(
             ),
         )
         await db.commit()
-
-        # Re-fetch the newly created voter
         if data.matricule:
             voter = await db.fetch_one(
-                f"SELECT * FROM voters WHERE phone = {p(1)} OR (matricule IS NOT NULL AND matricule = {p(2)})",
+                "SELECT * FROM voters WHERE phone = ? OR (matricule IS NOT NULL AND matricule = ?)",
                 (data.phone, data.matricule),
             )
         else:
-            voter = await db.fetch_one(
-                f"SELECT * FROM voters WHERE phone = {p(1)}", (data.phone,)
-            )
+            voter = await db.fetch_one("SELECT * FROM voters WHERE phone = ?", (data.phone,))
 
     if voter is None:
         raise HTTPException(500, "Erreur lors de la création du votant")
 
-    # --- 7. Insert vote and update has_voted atomically ---
     ip = request.client.host if request.client else "unknown"
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.utcnow().isoformat()
+
+    res = await db.execute(
+        """INSERT INTO votes
+           (candidate_id, voter_id, category, payment_method, payment_ref, ip_address, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        (data.candidate_id, voter["id"], data.category,
+         data.payment_method, str(uuid.uuid4())[:8].upper(), ip, now),
+    )
+    vote_id = res.lastrowid
+
     col = "has_voted_miss" if data.category == "miss" else "has_voted_master"
-    payment_ref = str(uuid.uuid4()).upper()
-
-    try:
-        res = await db.execute(
-            f"""INSERT INTO votes
-                (candidate_id, voter_id, category, payment_method, payment_ref, ip_address, created_at)
-                VALUES ({p(1)}, {p(2)}, {p(3)}, {p(4)}, {p(5)}, {p(6)}, {p(7)})""",
-            (
-                data.candidate_id,
-                voter["id"],
-                data.category,
-                data.payment_method,
-                payment_ref,
-                ip,
-                now,
-            ),
-        )
-        vote_id = res.lastrowid
-
-        await db.execute(
-            f"UPDATE voters SET {col} = 1 WHERE id = {p(1)}", (voter["id"],)
-        )
-        await db.commit()
-
-    except Exception as e:
-        await db.rollback()
-        error_msg = str(e).lower()
-        if "unique" in error_msg or "duplicate" in error_msg:
-            raise HTTPException(409, "Vous avez déjà voté dans cette catégorie")
-        raise HTTPException(500, "Vote échoué, veuillez réessayer")
+    await db.execute(f"UPDATE voters SET {col} = 1 WHERE id = ?", (voter["id"],))
+    await db.commit()
 
     return VoteOut(
         id=vote_id,
