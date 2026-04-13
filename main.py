@@ -90,7 +90,7 @@ async def health():
         "school": "ENSPM Maroua",
     }
 
-
+"""
 # ══════════════════════════════════════════════════════════════
 # ⚠️  ENDPOINT TEMPORAIRE — SUPPRIMER APRÈS UTILISATION !
 # Appeler UNE SEULE FOIS puis supprimer ce bloc et redéployer
@@ -144,3 +144,4 @@ async def setup_admin_once():
         "warning":  "⚠️ SUPPRIMEZ CET ENDPOINT ET REDÉPLOYEZ MAINTENANT !",
     }
 # ══════════════════════════════════════════════════════════════
+"""
