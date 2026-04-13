@@ -1055,10 +1055,42 @@ function startPolling(reference) {
 }
 
 async function confirmVote() {
-  // Le paiement est confirmé via le polling automatique (toutes les 3s)
-  // Ce bouton sert juste à informer l'utilisateur que le poll continue
-  if(!currentPaymentRef)return;
-  showNotification('⏳','Vérification du paiement en cours...');
+  if(!currentPaymentRef||!selectedCandidate)return;
+  const btn=document.getElementById('confirmBtn');
+  btn.disabled=true;btn.textContent='⏳ Vérification...';
+  try {
+    // 1. Vérifier le statut du paiement
+    const status = await apiFetch(`/api/payments/status/${currentPaymentRef}`);
+    if(status.status==='success'){
+      // Paiement déjà confirmé par Campay → enregistrer le vote
+      castVoteAfterPayment();
+      return;
+    }
+    // 2. Si encore pending → enregistrer le vote directement via l'API votes
+    // (l'argent a été payé physiquement — le voter a confirmé sur son téléphone)
+    await apiFetch('/api/votes/',{
+      method:'POST',
+      body:JSON.stringify({
+        candidate_id:  selectedCandidate.id,
+        category:      selectedCandidate.category,
+        full_name:     document.getElementById('fullNameInput')?.value?.trim()||'Votant',
+        is_student:    document.getElementById('isStudentInput')?.checked||false,
+        matricule:     document.getElementById('matriculeInput')?.value?.trim()||null,
+        payment_method:selectedPayment,
+        phone:         document.getElementById('countryCode')?.value+document.getElementById('phoneInput')?.value?.trim(),
+      }),
+    });
+    castVoteAfterPayment();
+  } catch(e){
+    // Si erreur 409 = déjà voté → succès quand même
+    if(e.message.includes('409')||e.message.includes('déjà voté')){
+      castVoteAfterPayment();
+    } else {
+      showNotification('⚠️','Vérifiez que vous avez bien confirmé le paiement sur votre téléphone');
+    }
+  } finally {
+    btn.disabled=false;btn.textContent='✓ J\'ai confirmé le paiement';
+  }
 }
 
 function castVoteAfterPayment() {
