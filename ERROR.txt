@@ -1,4 +1,6 @@
-INFO:     Started server process [55]
+ available CPUs in the instance
+==> Running 'uvicorn main:app --host 0.0.0.0 --port $PORT'
+INFO:     Started server process [56]
 INFO:     Waiting for application startup.
 ERROR:    Traceback (most recent call last):
   File "/opt/render/project/src/.venv/lib/python3.11/site-packages/starlette/routing.py", line 693, in lifespan
@@ -33,56 +35,29 @@ ERROR:    Traceback (most recent call last):
            ^^^^^^^^^^^^^^^^^^^^^
   File "/opt/render/project/src/main.py", line 43, in lifespan
     await init_db()
-  File "/opt/render/project/src/app/database.py", line 209, in init_db
-    await db.execute(sql, [])
-  File "/opt/render/project/src/app/database.py", line 86, in execute
-    async with self._pool.acquire() as conn:
-               ^^^^^^^^^^^^^^^^^^
-AttributeError: 'NoneType' object has no attribute 'acquire'
+  File "/opt/render/project/src/app/database.py", line 233, in init_db
+    await db.execute(
+  File "/opt/render/project/src/app/database.py", line 95, in execute
+    row = await conn.fetchrow(self._convert_placeholders(q), *params)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/render/project/src/.venv/lib/python3.11/site-packages/asyncpg/connection.py", line 678, in fetchrow
+    data = await self._execute(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/opt/render/project/src/.venv/lib/python3.11/site-packages/asyncpg/connection.py", line 1658, in _execute
+    result, _ = await self.__execute(
+                ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/render/project/src/.venv/lib/python3.11/site-packages/asyncpg/connection.py", line 1683, in __execute
+    return await self._do_execute(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/render/project/src/.venv/lib/python3.11/site-packages/asyncpg/connection.py", line 1710, in _do_execute
+    stmt = await self._get_statement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/render/project/src/.venv/lib/python3.11/site-packages/asyncpg/connection.py", line 397, in _get_statement
+    statement = await self._protocol.prepare(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "asyncpg/protocol/protocol.pyx", line 168, in prepare
+asyncpg.exceptions.UndefinedColumnError: column "id" does not exist
 ERROR:    Application startup failed. Exiting.
 ==> Exited with status 3
 ==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
 ==> Running 'uvicorn main:app --host 0.0.0.0 --port $PORT'
-==> Running 'uvicorn main:app --host 0.0.0.0 --port $PORT'
-INFO:     Started server process [37]
-INFO:     Waiting for application startup.
-ERROR:    Traceback (most recent call last):
-  File "/opt/render/project/src/.venv/lib/python3.11/site-packages/starlette/routing.py", line 693, in lifespan
-    async with self.lifespan_context(app) as maybe_state:
-  File "/opt/render/project/python/Python-3.11.9/lib/python3.11/contextlib.py", line 210, in __aenter__
-    return await anext(self.gen)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/render/project/src/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 133, in merged_lifespan
-    async with original_context(app) as maybe_original_state:
-  File "/opt/render/project/python/Python-3.11.9/lib/python3.11/contextlib.py", line 210, in __aenter__
-    return await anext(self.gen)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/render/project/src/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 133, in merged_lifespan
-    async with original_context(app) as maybe_original_state:
-  File "/opt/render/project/python/Python-3.11.9/lib/python3.11/contextlib.py", line 210, in __aenter__
-    return await anext(self.gen)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/render/project/src/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 133, in merged_lifespan
-    async with original_context(app) as maybe_original_state:
-  File "/opt/render/project/python/Python-3.11.9/lib/python3.11/contextlib.py", line 210, in __aenter__
-    return await anext(self.gen)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/render/project/src/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 133, in merged_lifespan
-    async with original_context(app) as maybe_original_state:
-  File "/opt/render/project/python/Python-3.11.9/lib/python3.11/contextlib.py", line 210, in __aenter__
-    return await anext(self.gen)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/render/project/src/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 133, in merged_lifespan
-    async with original_context(app) as maybe_original_state:
-  File "/opt/render/project/python/Python-3.11.9/lib/python3.11/contextlib.py", line 210, in __aenter__
-    return await anext(self.gen)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/render/project/src/main.py", line 43, in lifespan
-    await init_db()
-  File "/opt/render/project/src/app/database.py", line 209, in init_db
-    await db.execute(sql, [])
-  File "/opt/render/project/src/app/database.py", line 86, in execute
-    async with self._pool.acquire() as conn:
-               ^^^^^^^^^^^^^^^^^^
-AttributeError: 'NoneType' object has no attribute 'acquire'
-ERROR:    Application startup failed. Exiting.

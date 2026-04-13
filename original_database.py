@@ -1,7 +1,6 @@
 import os
 import aiosqlite
 import asyncio
-import ssl
 
 DB_PATH = os.getenv("DB_PATH", "terra_viva.db")
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///" + DB_PATH)
@@ -18,28 +17,14 @@ class DB:
         self.is_sqlite = database_url.startswith("sqlite") or database_url.startswith(
             "sqlite://"
         )
-        self.is_postgres = database_url.startswith("postgres://") or database_url.startswith(
-            "postgresql://"
-        )
         self.sqlite_path = DB_PATH
         self._pool = None
 
     async def connect(self):
-        if self.is_postgres:
+        if not self.is_sqlite:
             import asyncpg
-            # SSL required for Render PostgreSQL
-            ssl_context = ssl.create_default_context()
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_NONE
-            
-            self._pool = await asyncpg.create_pool(
-                self.database_url,
-                min_size=2,
-                max_size=10,
-                command_timeout=60,
-                max_inactive_connection_lifetime=300,
-                ssl=ssl_context
-            )
+
+            self._pool = await asyncpg.create_pool(self.database_url)
 
     async def close(self):
         if self._pool:
@@ -69,8 +54,6 @@ class DB:
                 row = await cur.fetchone()
                 return row
         else:
-            if not self._pool:
-                raise RuntimeError("PostgreSQL pool not initialized. Call connect() first.")
             async with self._pool.acquire() as conn:
                 q = self._convert_placeholders(query)
                 row = await conn.fetchrow(q, *params)
@@ -85,8 +68,6 @@ class DB:
                 rows = await cur.fetchall()
                 return rows
         else:
-            if not self._pool:
-                raise RuntimeError("PostgreSQL pool not initialized. Call connect() first.")
             async with self._pool.acquire() as conn:
                 q = self._convert_placeholders(query)
                 rows = await conn.fetch(q, *params)
@@ -102,10 +83,10 @@ class DB:
                 last = getattr(cur, "lastrowid", None)
                 return DBResult(lastrowid=last)
         else:
-            if not self._pool:
-                raise RuntimeError("PostgreSQL pool not initialized. Call connect() first.")
             async with self._pool.acquire() as conn:
-                q = self._convert_placeholders(query)
+                q = query
+                if params:
+                    q = self._convert_placeholders(query)
                 if (
                     query.strip().lower().startswith("insert")
                     and "returning" not in query.lower()
@@ -124,12 +105,8 @@ class DB:
                 await conn.executescript(script)
                 await conn.commit()
         else:
-            if not self._pool:
-                raise RuntimeError("PostgreSQL pool not initialized. Call connect() first.")
             async with self._pool.acquire() as conn:
-                statements = [s.strip() for s in script.split(';') if s.strip()]
-                for stmt in statements:
-                    await conn.execute(stmt)
+                await conn.execute(script)
 
     async def commit(self):
         return
@@ -145,7 +122,7 @@ async def get_db():
 async def init_db():
     is_sqlite = db.is_sqlite
 
-    if db.is_postgres:
+    if not is_sqlite:
         await db.connect()
 
     if is_sqlite:
