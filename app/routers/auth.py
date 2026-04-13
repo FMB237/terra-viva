@@ -36,9 +36,6 @@ def defer_limit(limit_value):
 SECRET_KEY = os.getenv("SECRET_KEY", "terra-viva-enspm-secret-change-in-prod")
 ALGORITHM = "HS256"
 
-# Get limiter from app state (set in main.py)
-def get_limiter(request: Request) -> LimiterType:
-    return request.app.state.limiter
 
 
 def create_token(data: dict) -> str:
