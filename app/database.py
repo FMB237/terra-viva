@@ -60,7 +60,7 @@ async def init_db():
                 id              INTEGER PRIMARY KEY AUTOINCREMENT,
                 reference       TEXT NOT NULL UNIQUE,
                 phone           TEXT NOT NULL,
-                amount          INTEGER NOT NULL DEFAULT 100,
+                amount          INTEGER NOT NULL DEFAULT 25,
                 provider        TEXT NOT NULL
                                 CHECK(provider IN ('orange_money','mtn_momo')),
                 status          TEXT NOT NULL DEFAULT 'pending'
@@ -92,7 +92,7 @@ async def init_db():
             INSERT OR IGNORE INTO settings VALUES ('results_public',       'true');
             INSERT OR IGNORE INTO settings VALUES ('orange_money_enabled', 'true');
             INSERT OR IGNORE INTO settings VALUES ('mtn_momo_enabled',     'true');
-            INSERT OR IGNORE INTO settings VALUES ('vote_price',           '100');
+            INSERT OR IGNORE INTO settings VALUES ('vote_price',           '25');
             INSERT OR IGNORE INTO settings VALUES ('event_date',           '2026-05-09');
             INSERT OR IGNORE INTO settings VALUES ('event_time',           '13:00');
             INSERT OR IGNORE INTO settings VALUES ('event_venue',          'Alliance Française de Garoua, Antenne de Maroua');

@@ -34,7 +34,7 @@ async def get_stats(db: aiosqlite.Connection = Depends(get_db)):
     voting_open = row is not None and row["value"] == "true"
     cur = await db.execute("SELECT value FROM settings WHERE key='vote_price'")
     price_row = await cur.fetchone()
-    price = int(price_row["value"]) if price_row else 100
+    price = int(price_row["value"]) if price_row else 25
 
     return StatsOut(
         total_votes=total, total_miss_votes=miss, total_master_votes=master,

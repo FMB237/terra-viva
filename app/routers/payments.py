@@ -15,7 +15,7 @@ from datetime import datetime
 
 router = APIRouter()
 
-VOTE_PRICE          = int(os.getenv("VOTE_PRICE", "100"))
+VOTE_PRICE          = int(os.getenv("VOTE_PRICE", "25"))
 CAMPAY_USERNAME     = os.getenv("CAMPAY_APP_USERNAME", "")
 CAMPAY_PASSWORD     = os.getenv("CAMPAY_APP_PASSWORD", "")
 CAMPAY_BASE_URL     = os.getenv("CAMPAY_BASE_URL", "https://demo.campay.net/api")
