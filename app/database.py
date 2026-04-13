@@ -3,6 +3,12 @@ import aiosqlite
 import asyncio
 import ssl
 
+# FIX: Import asyncpg at module level for exception handling
+try:
+    import asyncpg
+except ImportError:
+    asyncpg = None
+
 DB_PATH = os.getenv("DB_PATH", "terra_viva.db")
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///" + DB_PATH)
 
@@ -26,7 +32,6 @@ class DB:
 
     async def connect(self):
         if self.is_postgres:
-            import asyncpg
             # SSL required for Render PostgreSQL
             ssl_context = ssl.create_default_context()
             ssl_context.check_hostname = False
@@ -112,16 +117,19 @@ class DB:
                 has_returning = "returning" in query.lower()
                 
                 if is_insert and not has_returning:
-                    # For INSERTs without RETURNING, add RETURNING id to get the lastrowid
-                    # But we need to check if the table has an id column
-                    q = q + " RETURNING id"
+                    # For INSERTs without RETURNING, try to add RETURNING id
+                    q_with_returning = q + " RETURNING id"
                     try:
-                        row = await conn.fetchrow(q, *params)
+                        row = await conn.fetchrow(q_with_returning, *params)
                         return DBResult(lastrowid=row["id"] if row else None)
-                    except asyncpg.exceptions.UndefinedColumnError:
-                        # If id column doesn't exist or no primary key, just execute without returning
-                        await conn.execute(self._convert_placeholders(query), *params)
-                        return DBResult()
+                    except Exception as e:
+                        # If RETURNING id fails (no id column), just execute without it
+                        error_str = str(e).lower()
+                        if "id" in error_str and ("does not exist" in error_str or "undefinedcolumn" in error_str):
+                            await conn.execute(q, *params)
+                            return DBResult()
+                        else:
+                            raise
                 else:
                     # For UPDATE, DELETE, or INSERT with existing RETURNING
                     await conn.execute(q, *params)
@@ -160,6 +168,20 @@ async def init_db():
 
     if is_sqlite:
         await db.executescript("PRAGMA journal_mode=WAL;")
+
+    # FIX: For PostgreSQL, drop existing tables to ensure clean schema with id columns
+    # WARNING: This will delete existing data! Remove this in production after first deploy.
+    if not is_sqlite:
+        drop_tables = """
+        DROP TABLE IF EXISTS votes CASCADE;
+        DROP TABLE IF EXISTS payments CASCADE;
+        DROP TABLE IF EXISTS candidates CASCADE;
+        DROP TABLE IF EXISTS voters CASCADE;
+        DROP TABLE IF EXISTS admins CASCADE;
+        DROP TABLE IF EXISTS settings CASCADE;
+        """
+        await db.executescript(drop_tables)
+        print("Dropped existing PostgreSQL tables for clean recreation")
 
     if is_sqlite:
         candidates_schema = """CREATE TABLE IF NOT EXISTS candidates (
@@ -263,8 +285,6 @@ async def init_db():
                 "INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", [k, v]
             )
         else:
-            # FIX: Use proper PostgreSQL syntax with explicit conflict target
-            # The conflict target must be the primary key or unique constraint column
             await db.execute(
                 "INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO NOTHING",
                 [k, v],
@@ -376,7 +396,6 @@ async def init_db():
                 list(row),
             )
         else:
-            # FIX: Use proper PostgreSQL syntax with explicit column list and conflict target
             await db.execute(
                 """INSERT INTO candidates (id, name, category, department, year, age, bio, quote, photo_url, status) 
                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
@@ -395,7 +414,6 @@ async def init_db():
             [admin_pw],
         )
     else:
-        # FIX: Use proper PostgreSQL upsert syntax with explicit conflict target
         await db.execute(
             """INSERT INTO admins (id, username, password_hash, role) 
                VALUES (1, 'Miguel', $1, 'super_admin') 
@@ -403,4 +421,3 @@ async def init_db():
             [admin_pw],
         )
     print("DB initialisee - Terra Viva Royalty Day - ENSPM Maroua - 9 Mai 2026")
-    print("by FMB237")
