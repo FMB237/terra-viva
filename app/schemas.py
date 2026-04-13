@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Literal
-from datetime import datetime
+import re
 
 
 # ── CANDIDATE ──────────────────────────────────────
@@ -47,9 +47,30 @@ class CandidateOut(BaseModel):
 class VoterRegister(BaseModel):
     full_name: str = Field(..., min_length=2, max_length=120)
     email: Optional[str] = Field(None, max_length=120)
-    phone: str = Field(..., min_length=9, max_length=15)
+    phone: str = Field(..., min_length=8, max_length=20)
     is_student: bool = False
     matricule: Optional[str] = Field(None, min_length=3, max_length=30)
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v):
+        if v is None or v == "":
+            return None
+        pattern = r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$'
+        if not re.match(pattern, v.strip()):
+            raise ValueError("Format email invalide. Ex: nom@gmail.com")
+        return v.strip().lower()
+
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, v):
+        cleaned = re.sub(r'[\s\-\(\)]', '', v)
+        if not re.match(r'^\+\d{7,15}$', cleaned):
+            raise ValueError(
+                "Format téléphone invalide. "
+                "Incluez l'indicatif pays. Ex: +237699000001, +33612345678"
+            )
+        return cleaned
 
 
 # ── VOTE ───────────────────────────────────────────
@@ -61,9 +82,31 @@ class VoteCreate(BaseModel):
     is_student: bool = False
     matricule: Optional[str] = Field(None, min_length=3, max_length=30)
     payment_method: Literal["orange_money", "mtn_momo"]
-    phone: str = Field(..., min_length=9, max_length=15)
+    phone: str = Field(..., min_length=8, max_length=20)
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v):
+        if v is None or v == "":
+            return None
+        pattern = r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$'
+        if not re.match(pattern, v.strip()):
+            raise ValueError("Format email invalide. Ex: nom@gmail.com")
+        return v.strip().lower()
+
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, v):
+        cleaned = re.sub(r'[\s\-\(\)]', '', v)
+        if not re.match(r'^\+\d{7,15}$', cleaned):
+            raise ValueError(
+                "Format téléphone invalide. "
+                "Incluez l'indicatif pays. Ex: +237699000001, +33612345678"
+            )
+        return cleaned
 
 
+# ── VoteOut — manquait dans la version précédente ──
 class VoteOut(BaseModel):
     id: int
     candidate_id: int
@@ -75,13 +118,34 @@ class VoteOut(BaseModel):
 
 # ── PAYMENT ────────────────────────────────────────
 class PaymentInitiate(BaseModel):
-    phone: str = Field(..., min_length=9, max_length=15)
+    phone: str = Field(..., min_length=8, max_length=20)
     provider: Literal["orange_money", "mtn_momo"]
     candidate_id: int
     full_name: str = Field(..., min_length=2, max_length=120)
     email: Optional[str] = Field(None, max_length=120)
     is_student: bool = False
     matricule: Optional[str] = Field(None, min_length=3, max_length=30)
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v):
+        if v is None or v == "":
+            return None
+        pattern = r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$'
+        if not re.match(pattern, v.strip()):
+            raise ValueError("Format email invalide. Ex: nom@gmail.com")
+        return v.strip().lower()
+
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, v):
+        cleaned = re.sub(r'[\s\-\(\)]', '', v)
+        if not re.match(r'^\+\d{7,15}$', cleaned):
+            raise ValueError(
+                "Format téléphone invalide. "
+                "Incluez l'indicatif pays. Ex: +237699000001, +33612345678"
+            )
+        return cleaned
 
 
 class PaymentCallback(BaseModel):
