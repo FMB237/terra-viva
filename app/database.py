@@ -41,6 +41,23 @@ class DB:
                 result[key] = value.isoformat()
         return result
 
+    def _convert_params(self, params: tuple | list) -> tuple:
+        """Convert ISO datetime strings to datetime objects for PostgreSQL"""
+        if self.is_sqlite:
+            return params
+        converted = []
+        for p in params:
+            if isinstance(p, str) and len(p) > 10 and 'T' in p:
+                # Check if it looks like ISO datetime
+                try:
+                    dt = datetime.fromisoformat(p.replace('Z', '+00:00'))
+                    converted.append(dt)
+                except ValueError:
+                    converted.append(p)
+            else:
+                converted.append(p)
+        return tuple(converted)
+
     async def connect(self):
         if self.is_postgres:
             # SSL required for Render PostgreSQL
@@ -89,8 +106,9 @@ class DB:
                 raise RuntimeError("PostgreSQL pool not initialized. Call connect() first.")
             async with self._pool.acquire() as conn:
                 q = self._convert_placeholders(query)
+                params = self._convert_params(params)  # FIX: Convert datetime strings
                 row = await conn.fetchrow(q, *params)
-                return self._convert_row(row)  # FIX: Convert datetime to string
+                return self._convert_row(row)
 
     async def fetch_all(self, query: str, params: tuple | list | None = None):
         params = params or []
@@ -105,8 +123,9 @@ class DB:
                 raise RuntimeError("PostgreSQL pool not initialized. Call connect() first.")
             async with self._pool.acquire() as conn:
                 q = self._convert_placeholders(query)
+                params = self._convert_params(params)  # FIX: Convert datetime strings
                 rows = await conn.fetch(q, *params)
-                return [self._convert_row(row) for row in rows]  # FIX: Convert all rows
+                return [self._convert_row(row) for row in rows]
 
     async def execute(self, query: str, params: tuple | list | None = None):
         params = params or []
@@ -122,6 +141,7 @@ class DB:
                 raise RuntimeError("PostgreSQL pool not initialized. Call connect() first.")
             async with self._pool.acquire() as conn:
                 q = self._convert_placeholders(query)
+                params = self._convert_params(params)  # FIX: Convert datetime strings
                 
                 is_insert = query.strip().lower().startswith("insert")
                 has_returning = "returning" in query.lower()
