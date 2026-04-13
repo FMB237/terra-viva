@@ -718,6 +718,25 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;}
 
 <div class="notification" id="notification"><span id="notifIcon">✓</span> <span id="notifMsg">Action réalisée</span></div>
 
+<!-- ══ LOGIN MODAL ADMIN ══ -->
+<div class="modal-overlay" id="loginModal">
+  <div class="modal" style="max-width:360px;">
+    <h2 class="modal-title">🛡 Accès Admin</h2>
+    <p class="modal-subtitle">Connexion requise pour accéder au tableau de bord</p>
+    <div class="form-group" style="margin-top:16px;">
+      <label class="form-label">Nom d'utilisateur</label>
+      <input class="form-input" type="text" id="loginUsername" placeholder="admin" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Mot de passe</label>
+      <input class="form-input" type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+      <div id="loginError" style="display:none;color:var(--miss);font-size:12px;margin-top:6px;"></div>
+    </div>
+    <button class="modal-btn modal-btn-gold" id="loginBtn" onclick="submitLogin()" style="margin-top:8px;">Connexion →</button>
+    <button class="modal-btn" onclick="closeLoginModal()" style="background:none;border:1px solid var(--border);color:var(--muted);margin-top:6px;">Annuler</button>
+  </div>
+</div>
+
 <script>
 const API = '';
 let allCandidates = [];
@@ -735,8 +754,79 @@ const EMOJIS = {
 };
 function emojiFor(c) { return (EMOJIS[c.category]||EMOJIS.master)[(c.id-1)%6]; }
 
-// ── NAVIGATION ──
-function showPage(page, filter) {
+// ── ADMIN AUTH ──────────────────────────────────────────────────
+let adminToken = sessionStorage.getItem('admin_token') || null;
+
+function getAuthHeaders() {
+  const base = {'Content-Type':'application/json'};
+  if (adminToken) base['Authorization'] = `Bearer ${adminToken}`;
+  return base;
+}
+
+function isAdminLoggedIn() {
+  if (!adminToken) return false;
+  try {
+    const payload = JSON.parse(atob(adminToken.split('.')[1]));
+    if (payload.exp * 1000 < Date.now()) { adminLogout(); return false; }
+    return true;
+  } catch { return false; }
+}
+
+function adminLogout() {
+  adminToken = null;
+  sessionStorage.removeItem('admin_token');
+  sessionStorage.removeItem('admin_role');
+  showPage('hero');
+  showNotification('👋','Déconnecté');
+}
+
+function openLoginModal() {
+  document.getElementById('loginModal').classList.add('open');
+  setTimeout(()=>document.getElementById('loginUsername')?.focus(),100);
+}
+function closeLoginModal() {
+  document.getElementById('loginModal').classList.remove('open');
+  document.getElementById('loginError').style.display='none';
+  document.getElementById('loginPassword').value='';
+}
+
+async function submitLogin() {
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl    = document.getElementById('loginError');
+  const btn      = document.getElementById('loginBtn');
+  errEl.style.display='none';
+  if (!username||!password){errEl.textContent='Veuillez remplir tous les champs';errEl.style.display='block';return;}
+  btn.disabled=true; btn.textContent='⏳ Connexion...';
+  try {
+    const res = await fetch('/api/auth/login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username,password}),
+    });
+    const data = await res.json();
+    if (!res.ok){errEl.textContent=data.detail||'Identifiants incorrects';errEl.style.display='block';return;}
+    adminToken = data.access_token;
+    sessionStorage.setItem('admin_token', adminToken);
+    sessionStorage.setItem('admin_role', data.role);
+    closeLoginModal();
+    showNotification('✅',`Connecté — ${username}`);
+    _showPage('admin');
+  } catch(e){errEl.textContent='Erreur réseau — réessayez';errEl.style.display='block';}
+  finally{btn.disabled=false;btn.textContent='Connexion →';}
+}
+
+// Fermer login modal en cliquant overlay
+document.getElementById('loginModal').addEventListener('click',e=>{
+  if(e.target.id==='loginModal') closeLoginModal();
+});
+// Enter key dans le login modal
+document.getElementById('loginModal').addEventListener('keydown',e=>{
+  if(e.key==='Enter') submitLogin();
+});
+
+// ── NAVIGATION ──────────────────────────────────────────────────
+function _showPage(page, filter) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById(page+'-page').classList.add('active');
@@ -748,11 +838,30 @@ function showPage(page, filter) {
   window.scrollTo(0,0);
 }
 
+function showPage(page, filter) {
+  // Intercepter l'accès admin — login requis
+  if (page==='admin') {
+    if (!isAdminLoggedIn()) { openLoginModal(); return; }
+  }
+  _showPage(page, filter);
+}
+
 // ── API ──
 async function apiFetch(path, opts={}) {
+  // Ajouter le token JWT pour toutes les routes admin
+  if (path.startsWith('/api/admin')) {
+    opts.headers = {...getAuthHeaders(), ...opts.headers};
+  } else {
+    opts.headers = {'Content-Type':'application/json', ...opts.headers};
+  }
   try {
-    const res = await fetch(API+path,{headers:{'Content-Type':'application/json',...opts.headers},...opts});
-    if (!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.detail||`Erreur HTTP ${res.status}`);}
+    const res = await fetch(API+path, opts);
+    if (!res.ok) {
+      const e = await res.json().catch(()=>({}));
+      // Token expiré → forcer reconnexion
+      if (res.status===401) { adminLogout(); openLoginModal(); throw new Error('Session expirée'); }
+      throw new Error(e.detail||`Erreur HTTP ${res.status}`);
+    }
     return await res.json();
   } catch(e){showNotification('⚠️',e.message||'Erreur réseau');throw e;}
 }
@@ -946,12 +1055,10 @@ function startPolling(reference) {
 }
 
 async function confirmVote() {
+  // Le paiement est confirmé via le polling automatique (toutes les 3s)
+  // Ce bouton sert juste à informer l'utilisateur que le poll continue
   if(!currentPaymentRef)return;
-  const btn=document.getElementById('confirmBtn');
-  btn.disabled=true;btn.textContent='⏳ Vérification...';
-  try{await apiFetch(`/api/payments/mock-confirm/${currentPaymentRef}`);castVoteAfterPayment();}
-  catch{}
-  finally{btn.disabled=false;btn.textContent='✓ J\'ai confirmé le paiement';}
+  showNotification('⏳','Vérification du paiement en cours...');
 }
 
 function castVoteAfterPayment() {
@@ -1014,7 +1121,31 @@ function switchResultTab(cat) {
 }
 
 // ── ADMIN ──
-async function loadAdminData(){await Promise.all([loadAdminStats(),loadAdminCandidates(),loadAdminSettings(),loadAuditLog()]);}
+function _initAdminHeader() {
+  // Ajouter bouton déconnexion dans le header admin
+  const header = document.querySelector('.admin-header');
+  if (header && !document.getElementById('logoutBtn')) {
+    const role = sessionStorage.getItem('admin_role') || '';
+    const info = document.createElement('div');
+    info.style.cssText = 'display:flex;align-items:center;gap:10px;';
+    info.innerHTML = `
+      <span style="font-size:11px;color:var(--muted);">
+        ${role==='super_admin'?'👑 Super Admin':'👁 Modérateur'}
+      </span>
+      <button id="logoutBtn" onclick="adminLogout()" style="
+        background:none;border:1px solid rgba(196,115,106,0.35);
+        border-radius:6px;padding:5px 12px;color:var(--miss);
+        cursor:pointer;font-size:11px;font-family:'DM Sans',sans-serif;
+      ">↩ Déconnexion</button>
+    `;
+    header.appendChild(info);
+  }
+}
+
+async function loadAdminData(){
+  _initAdminHeader();
+  await Promise.all([loadAdminStats(),loadAdminCandidates(),loadAdminSettings(),loadAuditLog()]);
+}
 
 async function loadAdminStats(){
   try{
