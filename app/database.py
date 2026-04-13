@@ -136,10 +136,13 @@ async def init_db():
              'Un jeune, un arbre : Reverdir notre communauté.',
              '/static/images/amougou_metogo_elysee.jpg','active');
 
-            -- Default admin (password: admin123 — CHANGER EN PRODUCTION!)
-            INSERT OR IGNORE INTO admins(username, password_hash, role)
-            VALUES('admin',
-                   '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TiGniAg7uk1.hZWq.zNDAMwm6KqW',
+            -- Default admin (password: Th@9Sand5uNny — CHANGER EN PRODUCTION!)
+            -- First: Update any existing 'admin' user to Miguel
+            UPDATE admins SET username='Miguel', password_hash='$2b$12$TB6Oq.ucMurr3duerrjKGufn8VkclzG.HcwGsfldH3s2fwH1w0/FO' WHERE username='admin';
+            -- Second: Ensure Miguel exists (creates if not exists, updates if id=1 exists)
+            INSERT OR REPLACE INTO admins(id, username, password_hash, role)
+            VALUES(1, 'Miguel',
+                   '$2b$12$TB6Oq.ucMurr3duerrjKGufn8VkclzG.HcwGsfldH3s2fwH1w0/FO',
                    'super_admin');
         """)
         # Migrate old voters schema if needed (remove date_of_birth, allow optional matricule)
