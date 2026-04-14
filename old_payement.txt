@@ -63,11 +63,11 @@ async def _get_campay_status(reference: str) -> str:
         return "PENDING"
     try:
         client = _get_client()
-        result = client.get_transaction_status({"reference": reference})
-        print(f"[Campay] get_transaction_status({reference}) → {result}")
+        result = client.get_payment(reference)
+        print(f"[Campay] get_payment({reference}) → {result}")
         return result.get("status", "PENDING")
     except Exception as exc:
-        print(f"[Campay] Erreur get_transaction_status: {exc}")
+        print(f"[Campay] Erreur get_payment: {exc}")
         return "PENDING"
 
 
