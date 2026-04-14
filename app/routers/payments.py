@@ -10,14 +10,19 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from app.database import get_db
 from app.schemas import PaymentInitiate, PaymentCallback, PaymentOut
 import uuid, os, json
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter()
 
-VOTE_PRICE          = int(os.getenv("VOTE_PRICE", "25"))
-CAMPAY_USERNAME     = os.getenv("CAMPAY_APP_USERNAME", "")
-CAMPAY_PASSWORD     = os.getenv("CAMPAY_APP_PASSWORD", "")
-CAMPAY_BASE_URL     = os.getenv("CAMPAY_BASE_URL", "https://demo.campay.net/api")
+VOTE_PRICE      = int(os.getenv("VOTE_PRICE", "25"))
+CAMPAY_USERNAME = os.getenv("CAMPAY_APP_USERNAME", "")
+CAMPAY_PASSWORD = os.getenv("CAMPAY_APP_PASSWORD", "")
+CAMPAY_BASE_URL = os.getenv("CAMPAY_BASE_URL", "https://demo.campay.net/api")
+
+
+def _now() -> str:
+    """Return current UTC time as ISO string."""
+    return datetime.now(timezone.utc).isoformat()
 
 
 def _campay_env() -> str:
@@ -67,6 +72,7 @@ async def _get_campay_status(reference: str) -> str:
 
 
 # ── DB helpers ────────────────────────────────────────────────────────────────
+
 async def _get_or_create_voter(db, data: PaymentInitiate) -> dict:
     if data.matricule:
         voter = await db.fetch_one(
@@ -74,11 +80,13 @@ async def _get_or_create_voter(db, data: PaymentInitiate) -> dict:
             (data.phone, data.matricule),
         )
     else:
-        voter = await db.fetch_one("SELECT * FROM voters WHERE phone=?", (data.phone,))
+        voter = await db.fetch_one(
+            "SELECT * FROM voters WHERE phone=?", (data.phone,)
+        )
 
     if voter:
         await db.execute(
-            "UPDATE voters SET full_name=?,email=?,phone=?,is_student=?,matricule=? WHERE id=?",
+            "UPDATE voters SET full_name=?, email=?, phone=?, is_student=?, matricule=? WHERE id=?",
             (data.full_name, data.email, data.phone,
              1 if data.is_student else 0, data.matricule, voter["id"]),
         )
@@ -86,45 +94,64 @@ async def _get_or_create_voter(db, data: PaymentInitiate) -> dict:
         return dict(voter)
 
     await db.execute(
-        "INSERT INTO voters (full_name,email,phone,is_student,matricule) VALUES (?,?,?,?,?)",
-        (data.full_name, data.email, data.phone, 1 if data.is_student else 0, data.matricule),
+        "INSERT INTO voters (full_name, email, phone, is_student, matricule) VALUES (?, ?, ?, ?, ?)",
+        (data.full_name, data.email, data.phone,
+         1 if data.is_student else 0, data.matricule),
     )
     await db.commit()
+
     if data.matricule:
         voter = await db.fetch_one(
             "SELECT * FROM voters WHERE phone=? OR (matricule IS NOT NULL AND matricule=?)",
             (data.phone, data.matricule),
         )
     else:
-        voter = await db.fetch_one("SELECT * FROM voters WHERE phone=?", (data.phone,))
+        voter = await db.fetch_one(
+            "SELECT * FROM voters WHERE phone=?", (data.phone,)
+        )
     return dict(voter)
 
 
 async def _record_vote(db, candidate_id, voter, category, provider, payment_ref, ip="webhook"):
+    """Insert vote and mark voter atomically. Returns False if already voted."""
     col = "has_voted_miss" if category == "miss" else "has_voted_master"
     if voter.get(col):
         return False
-    now = datetime.utcnow().isoformat()
-    await db.execute(
-        """INSERT OR IGNORE INTO votes
-           (candidate_id,voter_id,category,payment_method,payment_ref,ip_address,created_at)
-           VALUES (?,?,?,?,?,?,?)""",
-        (candidate_id, voter["id"], category, provider, payment_ref, ip, now),
-    )
-    await db.execute(f"UPDATE voters SET {col}=1 WHERE id=?", (voter["id"],))
-    await db.commit()
+
+    try:
+        await db.execute(
+            """INSERT INTO votes
+               (candidate_id, voter_id, category, payment_method, payment_ref, ip_address, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?)
+               ON CONFLICT (voter_id, category) DO NOTHING""",
+            (candidate_id, voter["id"], category, provider, payment_ref, ip, _now()),
+        )
+        await db.execute(
+            f"UPDATE voters SET {col}=1 WHERE id=?", (voter["id"],)
+        )
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        print(f"[_record_vote] Erreur: {e}")
+        return False
+
     return True
 
 
 async def _finalize_vote(db, payment: dict):
-    candidate = await db.fetch_one("SELECT category FROM candidates WHERE id=?", (payment["candidate_id"],))
+    """Called after a successful payment — records the vote."""
+    candidate = await db.fetch_one(
+        "SELECT category FROM candidates WHERE id=?", (payment["candidate_id"],)
+    )
     if not candidate:
         return
 
     meta = {}
     if payment.get("metadata"):
-        try: meta = json.loads(payment["metadata"])
-        except: pass
+        try:
+            meta = json.loads(payment["metadata"])
+        except (json.JSONDecodeError, TypeError):
+            pass  # metadata may be None or malformed — safe to ignore
 
     phone     = payment["phone"]
     matricule = payment["voter_matricule"]
@@ -135,43 +162,61 @@ async def _finalize_vote(db, payment: dict):
             (phone, matricule),
         )
     else:
-        voter = await db.fetch_one("SELECT * FROM voters WHERE phone=?", (phone,))
+        voter = await db.fetch_one(
+            "SELECT * FROM voters WHERE phone=?", (phone,)
+        )
 
     if not voter:
         await db.execute(
-            "INSERT OR IGNORE INTO voters (full_name,email,phone,is_student,matricule) VALUES (?,?,?,?,?)",
-            (meta.get("full_name"), meta.get("email"), phone,
-             1 if meta.get("is_student") else 0,
-             None if matricule == phone else matricule),
+            """INSERT INTO voters (full_name, email, phone, is_student, matricule)
+               VALUES (?, ?, ?, ?, ?)
+               ON CONFLICT DO NOTHING""",
+            (
+                meta.get("full_name"),
+                meta.get("email"),
+                phone,
+                1 if meta.get("is_student") else 0,
+                None if matricule == phone else matricule,
+            ),
         )
         await db.commit()
-        voter = await db.fetch_one("SELECT * FROM voters WHERE phone=?", (phone,))
+        voter = await db.fetch_one(
+            "SELECT * FROM voters WHERE phone=?", (phone,)
+        )
 
     if voter:
         await _record_vote(
-            db, payment["candidate_id"], dict(voter),
-            candidate["category"], payment["provider"], payment["reference"],
+            db,
+            payment["candidate_id"],
+            dict(voter),
+            candidate["category"],
+            payment["provider"],
+            payment["reference"],
         )
 
 
 # ── ROUTES ────────────────────────────────────────────────────────────────────
 
 @router.post("/initiate", response_model=PaymentOut)
-async def initiate_payment(data: PaymentInitiate, db = Depends(get_db)):
+async def initiate_payment(data: PaymentInitiate, db=Depends(get_db)):
     if data.is_student and not data.matricule:
         raise HTTPException(400, "Le matricule est requis pour les étudiants")
 
-    row = await db.fetch_one("SELECT value FROM settings WHERE key='voting_open'")
+    row = await db.fetch_one(
+        "SELECT value FROM settings WHERE key=?", ("voting_open",)
+    )
     if not row or row["value"] != "true":
         raise HTTPException(403, "Les votes sont actuellement fermés")
 
     pk = "orange_money_enabled" if data.provider == "orange_money" else "mtn_momo_enabled"
-    row = await db.fetch_one("SELECT value FROM settings WHERE key=?", (pk,))
+    row = await db.fetch_one(
+        "SELECT value FROM settings WHERE key=?", (pk,)
+    )
     if not row or row["value"] != "true":
         raise HTTPException(403, f"{data.provider} est désactivé")
 
     candidate = await db.fetch_one(
-        "SELECT id,name,category FROM candidates WHERE id=? AND status='active'",
+        "SELECT id, name, category FROM candidates WHERE id=? AND status='active'",
         (data.candidate_id,),
     )
     if not candidate:
@@ -182,7 +227,7 @@ async def initiate_payment(data: PaymentInitiate, db = Depends(get_db)):
     if voter.get(col):
         raise HTTPException(409, f"Vous avez déjà voté pour {candidate['category'].upper()}")
 
-    # Paiement pending existant ?
+    # Reuse existing pending payment if present
     existing = await db.fetch_one(
         "SELECT * FROM payments WHERE voter_matricule=? AND candidate_id=? AND status='pending'",
         (data.matricule or data.phone, data.candidate_id),
@@ -195,7 +240,7 @@ async def initiate_payment(data: PaymentInitiate, db = Depends(get_db)):
         )
 
     reference = f"TV-{uuid.uuid4().hex[:10].upper()}"
-    now       = datetime.utcnow().isoformat()
+    now       = _now()
     metadata  = json.dumps({
         "full_name":  data.full_name,
         "email":      data.email,
@@ -205,8 +250,9 @@ async def initiate_payment(data: PaymentInitiate, db = Depends(get_db)):
 
     await db.execute(
         """INSERT INTO payments
-           (reference,phone,amount,provider,status,candidate_id,voter_matricule,metadata,created_at,updated_at)
-           VALUES (?,?,?,?,'pending',?,?,?,?,?)""",
+           (reference, phone, amount, provider, status, candidate_id,
+            voter_matricule, metadata, created_at, updated_at)
+           VALUES (?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)""",
         (reference, data.phone, VOTE_PRICE, data.provider,
          data.candidate_id, data.matricule or data.phone,
          metadata, now, now),
@@ -223,19 +269,21 @@ async def initiate_payment(data: PaymentInitiate, db = Depends(get_db)):
 
 
 @router.post("/callback")
-async def payment_callback(data: PaymentCallback, db = Depends(get_db)):
+async def payment_callback(data: PaymentCallback, db=Depends(get_db)):
     """Webhook Campay — POST https://terra-viva.onrender.com/api/payments/callback"""
-    payment = await db.fetch_one("SELECT * FROM payments WHERE reference=?", (data.reference,))
+    payment = await db.fetch_one(
+        "SELECT * FROM payments WHERE reference=?", (data.reference,)
+    )
     if not payment:
         raise HTTPException(404, "Référence introuvable")
 
-    # Idempotence
+    # Idempotence — don't process the same payment twice
     if payment["status"] == "success":
         return {"message": "Déjà traité", "status": "success"}
 
-    now = datetime.utcnow().isoformat()
+    now = _now()
     await db.execute(
-        "UPDATE payments SET status=?,updated_at=? WHERE reference=?",
+        "UPDATE payments SET status=?, updated_at=? WHERE reference=?",
         (data.status, now, data.reference),
     )
     await db.commit()
@@ -247,9 +295,11 @@ async def payment_callback(data: PaymentCallback, db = Depends(get_db)):
 
 
 @router.get("/status/{reference}")
-async def payment_status(reference: str, db = Depends(get_db)):
+async def payment_status(reference: str, db=Depends(get_db)):
     """Polling frontend toutes les 3s."""
-    row = await db.fetch_one("SELECT * FROM payments WHERE reference=?", (reference,))
+    row = await db.fetch_one(
+        "SELECT * FROM payments WHERE reference=?", (reference,)
+    )
     if not row:
         raise HTTPException(404, "Référence introuvable")
 
@@ -257,12 +307,16 @@ async def payment_status(reference: str, db = Depends(get_db)):
 
     if payment["status"] == "pending" and CAMPAY_USERNAME:
         campay_status = await _get_campay_status(reference)
-        status_map = {"SUCCESSFUL": "success", "FAILED": "failed", "CANCELLED": "cancelled"}
+        status_map = {
+            "SUCCESSFUL": "success",
+            "FAILED":     "failed",
+            "CANCELLED":  "cancelled",
+        }
         if campay_status in status_map:
             new_status = status_map[campay_status]
-            now = datetime.utcnow().isoformat()
+            now = _now()
             await db.execute(
-                "UPDATE payments SET status=?,updated_at=? WHERE reference=?",
+                "UPDATE payments SET status=?, updated_at=? WHERE reference=?",
                 (new_status, now, reference),
             )
             await db.commit()

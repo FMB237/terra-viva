@@ -5,6 +5,12 @@ from typing import Optional
 
 router = APIRouter()
 
+# Allowlist of fields that can be updated — prevents SQL injection
+ALLOWED_UPDATE_FIELDS = {
+    "name", "category", "department", "year",
+    "age", "bio", "quote", "photo_url", "status"
+}
+
 
 async def get_vote_counts(db) -> dict:
     rows = await db.fetch_all(
@@ -17,7 +23,7 @@ async def get_vote_counts(db) -> dict:
 async def list_candidates(
     category: Optional[str] = None,
     status: str = "active",
-    db = Depends(get_db),
+    db=Depends(get_db),
 ):
     query = "SELECT * FROM candidates WHERE status = ?"
     params: list = [status]
@@ -33,7 +39,7 @@ async def list_candidates(
     for row in rows:
         r = dict(row)
         r["vote_count"] = vote_counts.get(r["id"], 0)
-        # BUG FIX: guard against unexpected category values
+        # Guard against unexpected category values
         if r["category"] in by_category:
             by_category[r["category"]].append(r)
 
@@ -44,17 +50,15 @@ async def list_candidates(
             c["rank"] = i + 1
             candidates.append(c)
 
-    if category in ("miss", "master"):
-        candidates = [c for c in candidates if c["category"] == category]
-
+    # SQL already filtered by category — no need to filter again in Python
     return candidates
 
 
 @router.get("/{candidate_id}", response_model=CandidateOut)
-async def get_candidate(
-    candidate_id: int, db = Depends(get_db)
-):
-    row = await db.fetch_one("SELECT * FROM candidates WHERE id = ?", (candidate_id,))
+async def get_candidate(candidate_id: int, db=Depends(get_db)):
+    row = await db.fetch_one(
+        "SELECT * FROM candidates WHERE id = ?", (candidate_id,)
+    )
     if not row:
         raise HTTPException(status_code=404, detail="Candidat introuvable")
 
@@ -66,7 +70,9 @@ async def get_candidate(
     ranked_rows = await db.fetch_all(
         """SELECT candidate_id, COUNT(*) as cnt
            FROM votes
-           WHERE candidate_id IN (SELECT id FROM candidates WHERE category = ? AND status = 'active')
+           WHERE candidate_id IN (
+               SELECT id FROM candidates WHERE category = ? AND status = 'active'
+           )
            GROUP BY candidate_id
            ORDER BY cnt DESC""",
         (c["category"],),
@@ -76,17 +82,14 @@ async def get_candidate(
     if c["id"] in rank_ids:
         c["rank"] = rank_ids.index(c["id"]) + 1
     else:
-        # BUG FIX: candidate with 0 votes ranks after all who have votes
-        # Count active candidates in category with votes, +1 for position
+        # Candidate with 0 votes ranks after all who have votes
         c["rank"] = len(rank_ids) + 1
 
     return c
 
 
 @router.post("/", response_model=CandidateOut, status_code=201)
-async def create_candidate(
-    data: CandidateCreate, db = Depends(get_db)
-):
+async def create_candidate(data: CandidateCreate, db=Depends(get_db)):
     res = await db.execute(
         """INSERT INTO candidates (name, category, department, year, age, bio, quote, photo_url, status)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
@@ -103,25 +106,47 @@ async def create_candidate(
 async def update_candidate(
     candidate_id: int,
     data: CandidateUpdate,
-    db = Depends(get_db),
+    db=Depends(get_db),
 ):
-    # BUG FIX: model_dump(exclude_none=True) instead of manual dict comp
-    # to correctly exclude None while allowing falsy values like 0 or ""
-    fields = data.model_dump(exclude_none=True)
+    # Check candidate exists
+    existing = await db.fetch_one(
+        "SELECT id FROM candidates WHERE id = ?", (candidate_id,)
+    )
+    if not existing:
+        raise HTTPException(404, "Candidat introuvable")
+
+    # Only allow known safe fields — prevents SQL injection
+    fields = {
+        k: v
+        for k, v in data.model_dump(exclude_none=True).items()
+        if k in ALLOWED_UPDATE_FIELDS
+    }
     if not fields:
-        raise HTTPException(400, "Aucun champ à mettre à jour")
+        raise HTTPException(400, "Aucun champ valide à mettre à jour")
 
     set_clause = ", ".join(f"{k} = ?" for k in fields)
     values = list(fields.values()) + [candidate_id]
-    await db.execute(f"UPDATE candidates SET {set_clause} WHERE id = ?", values)
+    await db.execute(
+        f"UPDATE candidates SET {set_clause} WHERE id = ?", values
+    )
     await db.commit()
     return await get_candidate(candidate_id, db)
 
 
 @router.delete("/{candidate_id}")
-async def delete_candidate(
-    candidate_id: int, db = Depends(get_db)
-):
-    await db.execute("DELETE FROM candidates WHERE id = ?", (candidate_id,))
+async def delete_candidate(candidate_id: int, db=Depends(get_db)):
+    # Check candidate exists
+    existing = await db.fetch_one(
+        "SELECT id FROM candidates WHERE id = ?", (candidate_id,)
+    )
+    if not existing:
+        raise HTTPException(404, "Candidat introuvable")
+
+    # Soft delete — preserves referential integrity with votes table
+    # Hard DELETE would break foreign keys in votes, audit logs, and results
+    await db.execute(
+        "UPDATE candidates SET status = 'disqualified' WHERE id = ?",
+        (candidate_id,),
+    )
     await db.commit()
     return {"message": "Candidat supprimé"}
