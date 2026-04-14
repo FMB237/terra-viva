@@ -1,7 +1,40 @@
 from pydantic import BaseModel, Field, field_validator, field_serializer
-from typing import Optional, Literal
+from typing import Optional, Literal, Union
 from datetime import datetime
 import re
+
+
+# ── SHARED MIXIN — phone & email validators ────────
+class PhoneEmailMixin(BaseModel):
+    """Reusable validators for phone and email fields."""
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def validate_email(cls, v):
+        if v is None or v == "":
+            return None
+        pattern = r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$'
+        if not re.match(pattern, v.strip()):
+            raise ValueError("Format email invalide. Ex: nom@gmail.com")
+        return v.strip().lower()
+
+    @field_validator("phone", mode="before")
+    @classmethod
+    def validate_phone(cls, v):
+        cleaned = re.sub(r'[\s\-\(\)]', '', v)
+        if not re.match(r'^\+\d{7,15}$', cleaned):
+            raise ValueError(
+                "Format téléphone invalide. "
+                "Incluez l'indicatif pays. Ex: +237699000001, +33612345678"
+            )
+        return cleaned
+
+
+def serialize_dt(v: Union[datetime, str]) -> str:
+    """Serialize datetime or ISO string to ISO string consistently."""
+    if isinstance(v, datetime):
+        return v.isoformat()
+    return str(v)  # already a string from SQLite
 
 
 # ── CANDIDATE ──────────────────────────────────────
@@ -18,12 +51,12 @@ class CandidateCreate(BaseModel):
 
 
 class CandidateUpdate(BaseModel):
-    name: Optional[str] = None
-    department: Optional[str] = None
-    year: Optional[str] = None
-    age: Optional[int] = None
-    bio: Optional[str] = None
-    quote: Optional[str] = None
+    name: Optional[str] = Field(None, min_length=2, max_length=100)
+    department: Optional[str] = Field(None, min_length=2, max_length=100)
+    year: Optional[str] = Field(None, max_length=50)
+    age: Optional[int] = Field(None, ge=16, le=35)
+    bio: Optional[str] = Field(None, max_length=1500)
+    quote: Optional[str] = Field(None, max_length=300)
     photo_url: Optional[str] = None
     status: Optional[Literal["active", "draft", "disqualified"]] = None
 
@@ -41,48 +74,27 @@ class CandidateOut(BaseModel):
     status: str
     vote_count: int = 0
     rank: int = 0
-    created_at: datetime  # FIX: Accept datetime from PostgreSQL
-    
-    @field_serializer('created_at')
-    def serialize_created_at(self, v: datetime) -> str:
-        return v.isoformat()  # Convert to ISO string for JSON
-    
+    created_at: Union[datetime, str]
+
+    @field_serializer("created_at")
+    def serialize_created_at(self, v) -> str:
+        return serialize_dt(v)
+
     class Config:
         from_attributes = True
 
 
 # ── VOTER ──────────────────────────────────────────
-class VoterRegister(BaseModel):
+class VoterRegister(PhoneEmailMixin):
     full_name: str = Field(..., min_length=2, max_length=120)
     email: Optional[str] = Field(None, max_length=120)
     phone: str = Field(..., min_length=8, max_length=20)
     is_student: bool = False
     matricule: Optional[str] = Field(None, min_length=3, max_length=30)
 
-    @field_validator("email")
-    @classmethod
-    def validate_email(cls, v):
-        if v is None or v == "":
-            return None
-        pattern = r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$'
-        if not re.match(pattern, v.strip()):
-            raise ValueError("Format email invalide. Ex: nom@gmail.com")
-        return v.strip().lower()
-
-    @field_validator("phone")
-    @classmethod
-    def validate_phone(cls, v):
-        cleaned = re.sub(r'[\s\-\(\)]', '', v)
-        if not re.match(r'^\+\d{7,15}$', cleaned):
-            raise ValueError(
-                "Format téléphone invalide. "
-                "Incluez l'indicatif pays. Ex: +237699000001, +33612345678"
-            )
-        return cleaned
-
 
 # ── VOTE ───────────────────────────────────────────
-class VoteCreate(BaseModel):
+class VoteCreate(PhoneEmailMixin):
     candidate_id: int
     category: Literal["miss", "master"]
     full_name: str = Field(..., min_length=2, max_length=120)
@@ -92,44 +104,22 @@ class VoteCreate(BaseModel):
     payment_method: Literal["orange_money", "mtn_momo"]
     phone: str = Field(..., min_length=8, max_length=20)
 
-    @field_validator("email")
-    @classmethod
-    def validate_email(cls, v):
-        if v is None or v == "":
-            return None
-        pattern = r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$'
-        if not re.match(pattern, v.strip()):
-            raise ValueError("Format email invalide. Ex: nom@gmail.com")
-        return v.strip().lower()
 
-    @field_validator("phone")
-    @classmethod
-    def validate_phone(cls, v):
-        cleaned = re.sub(r'[\s\-\(\)]', '', v)
-        if not re.match(r'^\+\d{7,15}$', cleaned):
-            raise ValueError(
-                "Format téléphone invalide. "
-                "Incluez l'indicatif pays. Ex: +237699000001, +33612345678"
-            )
-        return cleaned
-
-
-# ── VoteOut — manquait dans la version précédente ──
 class VoteOut(BaseModel):
     id: int
     candidate_id: int
     candidate_name: str
     category: str
     payment_method: str
-    created_at: datetime  # FIX: Accept datetime from PostgreSQL
-    
-    @field_serializer('created_at')
-    def serialize_created_at(self, v: datetime) -> str:
-        return v.isoformat()
+    created_at: Union[datetime, str]
+
+    @field_serializer("created_at")
+    def serialize_created_at(self, v) -> str:
+        return serialize_dt(v)
 
 
 # ── PAYMENT ────────────────────────────────────────
-class PaymentInitiate(BaseModel):
+class PaymentInitiate(PhoneEmailMixin):
     phone: str = Field(..., min_length=8, max_length=20)
     provider: Literal["orange_money", "mtn_momo"]
     candidate_id: int
@@ -137,27 +127,6 @@ class PaymentInitiate(BaseModel):
     email: Optional[str] = Field(None, max_length=120)
     is_student: bool = False
     matricule: Optional[str] = Field(None, min_length=3, max_length=30)
-
-    @field_validator("email")
-    @classmethod
-    def validate_email(cls, v):
-        if v is None or v == "":
-            return None
-        pattern = r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$'
-        if not re.match(pattern, v.strip()):
-            raise ValueError("Format email invalide. Ex: nom@gmail.com")
-        return v.strip().lower()
-
-    @field_validator("phone")
-    @classmethod
-    def validate_phone(cls, v):
-        cleaned = re.sub(r'[\s\-\(\)]', '', v)
-        if not re.match(r'^\+\d{7,15}$', cleaned):
-            raise ValueError(
-                "Format téléphone invalide. "
-                "Incluez l'indicatif pays. Ex: +237699000001, +33612345678"
-            )
-        return cleaned
 
 
 class PaymentCallback(BaseModel):
@@ -173,11 +142,11 @@ class PaymentOut(BaseModel):
     provider: str
     amount: int
     phone: str
-    created_at: datetime  # FIX: Accept datetime from PostgreSQL
-    
-    @field_serializer('created_at')
-    def serialize_created_at(self, v: datetime) -> str:
-        return v.isoformat()
+    created_at: Union[datetime, str]
+
+    @field_serializer("created_at")
+    def serialize_created_at(self, v) -> str:
+        return serialize_dt(v)
 
 
 # ── RESULTS ────────────────────────────────────────
@@ -204,8 +173,8 @@ class ResultsOut(BaseModel):
 
 # ── ADMIN AUTH ─────────────────────────────────────
 class AdminLogin(BaseModel):
-    username: str
-    password: str
+    username: str = Field(..., min_length=2, max_length=50)
+    password: str = Field(..., min_length=6, max_length=200)
 
 
 class TokenOut(BaseModel):
@@ -216,8 +185,8 @@ class TokenOut(BaseModel):
 
 # ── SETTINGS ───────────────────────────────────────
 class SettingUpdate(BaseModel):
-    key: str
-    value: str
+    key: str = Field(..., min_length=1, max_length=100)
+    value: str = Field(..., min_length=1, max_length=500)
 
 
 class StatsOut(BaseModel):
