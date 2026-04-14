@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator, field_serializer
+from pydantic import BaseModel, Field, field_validator, field_serializer, model_validator
 from typing import Optional, Literal, Union
 from datetime import datetime
 import re
@@ -8,7 +8,7 @@ import re
 class PhoneEmailMixin(BaseModel):
     """Reusable validators for phone and email fields."""
 
-    @field_validator("email", mode="before")
+    @field_validator("email", mode="before", check_fields=False)
     @classmethod
     def validate_email(cls, v):
         if v is None or v == "":
@@ -18,10 +18,12 @@ class PhoneEmailMixin(BaseModel):
             raise ValueError("Format email invalide. Ex: nom@gmail.com")
         return v.strip().lower()
 
-    @field_validator("phone", mode="before")
+    @field_validator("phone", mode="before", check_fields=False)
     @classmethod
     def validate_phone(cls, v):
-        cleaned = re.sub(r'[\s\-\(\)]', '', v)
+        if v is None:
+            return v
+        cleaned = re.sub(r'[\s\-\(\)]', '', str(v))
         if not re.match(r'^\+\d{7,15}$', cleaned):
             raise ValueError(
                 "Format téléphone invalide. "
