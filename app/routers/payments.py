@@ -21,8 +21,8 @@ CAMPAY_BASE_URL = os.getenv("CAMPAY_BASE_URL", "https://demo.campay.net/api")
 
 
 def _now() -> str:
-    """Return current UTC time as ISO string."""
-    return datetime.now(timezone.utc).isoformat()
+    """Return current UTC time as ISO string (naive datetime for DB compatibility)."""
+    return datetime.utcnow().isoformat()  # ✅ Fixed: removed timezone.utc
 
 
 def _campay_env() -> str:
@@ -61,7 +61,7 @@ async def _initiate_campay(phone: str, amount: int, reference: str) -> dict:
         
         return {
             "reference": reference,
-            "campay_reference": result.get("reference"),  # Campay's UUID
+            "campay_reference": result.get("reference"),
             "status": result.get("status", "PENDING"),
             "operator": result.get("operator"),
             "message": "Initiated"
@@ -275,7 +275,6 @@ async def initiate_payment(data: PaymentInitiate, db=Depends(get_db)):
         "matricule":  data.matricule,
     }, ensure_ascii=False)
 
-    # Initiate payment with Campay and get campay_reference
     campay_result = await _initiate_campay(data.phone, VOTE_PRICE, reference)
 
     await db.execute(
@@ -284,7 +283,7 @@ async def initiate_payment(data: PaymentInitiate, db=Depends(get_db)):
             voter_matricule, metadata, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (reference,
-         campay_result.get("campay_reference"),  # Store Campay's UUID
+         campay_result.get("campay_reference"),
          data.phone, VOTE_PRICE, data.provider,
          "pending",
          data.candidate_id,
@@ -309,7 +308,6 @@ async def payment_callback(data: PaymentCallback, db=Depends(get_db)):
     if not payment:
         raise HTTPException(404, "Référence introuvable")
 
-    # Idempotence — don't process the same payment twice
     if payment["status"] == "success":
         return {"message": "Déjà traité", "status": "success"}
 
@@ -337,7 +335,6 @@ async def payment_status(reference: str, db=Depends(get_db)):
 
     payment = dict(row)
 
-    # Only poll Campay if payment is pending AND we have campay_reference
     if payment["status"] == "pending" and CAMPAY_USERNAME and payment.get("campay_reference"):
         campay_status = await _get_campay_status(payment["campay_reference"])
         
