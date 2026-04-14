@@ -59,12 +59,20 @@ async def _initiate_campay(phone: str, amount: int, reference: str) -> dict:
 
 
 async def _get_campay_status(reference: str) -> str:
+    # ✅ Skip Campay API call if in mock mode (no credentials)
     if not CAMPAY_USERNAME:
-        return "PENDING"
+        return "PENDING"  # Always return PENDING in mock mode
+    
     try:
         client = _get_client()
         result = client.get_transaction_status({"reference": reference})
         print(f"[Campay] get_transaction_status({reference}) → {result}")
+        
+        # Handle error responses
+        if "message" in result and result["message"] == "Invalid reference":
+            print(f"[Campay] Reference not found in Campay system: {reference}")
+            return "PENDING"  # Keep as pending if not found
+        
         return result.get("status", "PENDING")
     except Exception as exc:
         print(f"[Campay] Erreur get_transaction_status: {exc}")
