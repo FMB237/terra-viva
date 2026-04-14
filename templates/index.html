@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=DM+Sans:wght@300;400;500;600&family=Bebas+Neue&display=swap" rel="stylesheet">
 <style>
+/* ========== STYLES COMPLETS (inchangés) ========== */
 :root{
   --earth:#2D1B0E;--bark:#4A2C14;--moss:#3D5A2A;--moss-light:#5A8040;
   --leaf:#7AB648;--leaf-dim:rgba(122,182,72,0.15);
@@ -230,7 +231,6 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(12,10,6,0.92
 .student-toggle .form-label{margin-bottom:0;color:var(--text);}
 .consent-row{display:flex;align-items:flex-start;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
 .consent-row input{margin-top:2px;}.consent-text{font-size:12px;color:var(--muted);line-height:1.5;}
-/* COUNTRY SELECT */
 .phone-row{display:flex;gap:8px;}
 .country-select{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:12px;outline:none;cursor:pointer;width:120px;flex-shrink:0;appearance:none;}
 .country-select:focus{border-color:var(--gold);}.country-select option{background:var(--dark2);}
@@ -288,7 +288,7 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;}
 <body>
 
 <nav>
-  <div class="nav-brand" onclick="showPage('hero')">
+  <div class="nav-brand" id="navBrand">
     <img class="nav-brand-logo" src="/static/images/logo.png" alt="Terra Viva" onerror="this.style.display='none'">
     <div class="nav-brand-text">
       <span class="nav-brand-name">Terra Viva Royalty Day</span>
@@ -296,15 +296,15 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;}
     </div>
   </div>
   <div class="nav-links">
-    <button class="nav-btn active" id="nav-home" onclick="showPage('hero')">Accueil</button>
-    <button class="nav-btn" id="nav-candidates" onclick="showPage('candidates','all')">Candidats</button>
-    <button class="nav-btn" id="nav-results" onclick="showPage('results')">Résultats</button>
-    <button class="nav-btn" id="nav-admin" onclick="showPage('admin')">Admin</button>
-    <button class="nav-cta" onclick="showPage('candidates','all')">🌿 Voter</button>
+    <button class="nav-btn active" data-page="hero">Accueil</button>
+    <button class="nav-btn" data-page="candidates">Candidats</button>
+    <button class="nav-btn" data-page="results">Résultats</button>
+    <button class="nav-btn" data-page="admin">Admin</button>
+    <button class="nav-cta" id="navVoteBtn">🌿 Voter</button>
   </div>
 </nav>
 
-<!-- ══ HERO ══ -->
+<!-- HERO PAGE -->
 <div class="page active" id="hero-page">
   <div class="hero-bg"></div><div class="hero-pattern"></div>
   <div class="hero-content">
@@ -314,15 +314,9 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;}
       <span class="club-tag">⚡ Club AGEPD-ENSPM</span>
     </div>
     <div class="hero-eyebrow">École Nationale Supérieure Polytechnique de Maroua — présentent</div>
-    <h1 class="hero-title">
-      <span class="terra">Terra</span> <span class="viva">Viva</span>
-      <span class="royalty">Royalty Day</span>
-    </h1>
+    <h1 class="hero-title"><span class="terra">Terra</span> <span class="viva">Viva</span><span class="royalty">Royalty Day</span></h1>
     <div class="hero-date-badge">
-      <div>
-        <div class="hero-date-main">📅 SAMEDI 9 MAI 2026 — 13H00</div>
-        <div class="hero-date-venue">📍 Alliance Française de Garoua, Antenne de Maroua</div>
-      </div>
+      <div><div class="hero-date-main">📅 SAMEDI 9 MAI 2026 — 13H00</div><div class="hero-date-venue">📍 Alliance Française de Garoua, Antenne de Maroua</div></div>
     </div>
     <div class="stats-row">
       <div class="stat-item"><div class="stat-num" id="statCandidates">—</div><div class="stat-label">Candidats</div></div>
@@ -339,8 +333,8 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;}
       </div>
     </div>
     <div class="vote-buttons">
-      <button class="btn-vote-miss" onclick="showPage('candidates','miss')">👑 Miss Terra Viva</button>
-      <button class="btn-vote-master" onclick="showPage('candidates','master')">🌍 Master Terra Viva</button>
+      <button class="btn-vote-miss" id="heroVoteMiss">👑 Miss Terra Viva</button>
+      <button class="btn-vote-master" id="heroVoteMaster">🌍 Master Terra Viva</button>
     </div>
   </div>
 
@@ -359,10 +353,10 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;}
     <div class="section-eyebrow" style="color:var(--gold);margin-top:8px;">Les aires culturelles</div>
     <h2 class="section-title" style="margin-bottom:20px;">Peuples du <span style="color:var(--leaf)">Cameroun</span></h2>
     <div class="aires-grid">
-      <div class="aire-card"><img class="aire-photo" src="/static/images/beti.jpeg" alt="Peuple Fang-Béti" onerror="this.style.background='var(--dark3)'"><div class="aire-name">Peuple Fang-Béti</div></div>
-      <div class="aire-card"><img class="aire-photo" src="/static/images/sawa.jpeg" alt="Peuple Sawa" onerror="this.style.background='var(--dark3)'"><div class="aire-name">Peuple Sawa</div></div>
-      <div class="aire-card"><img class="aire-photo" src="/static/images/grassfield.jpeg" alt="Peuple du Grassfield" onerror="this.style.background='var(--dark3)'"><div class="aire-name">Peuple du Grassfield</div></div>
-      <div class="aire-card"><img class="aire-photo" src="/static/images/nord_people.jpeg" alt="Peuple Soudano-Sahélien" onerror="this.style.background='var(--dark3)'"><div class="aire-name">Peuple Soudano-Sahélien</div></div>
+      <div class="aire-card"><img class="aire-photo" src="/static/images/beti.jpeg" alt="Peuple Fang-Béti"><div class="aire-name">Peuple Fang-Béti</div></div>
+      <div class="aire-card"><img class="aire-photo" src="/static/images/sawa.jpeg" alt="Peuple Sawa"><div class="aire-name">Peuple Sawa</div></div>
+      <div class="aire-card"><img class="aire-photo" src="/static/images/grassfield.jpeg" alt="Peuple du Grassfield"><div class="aire-name">Peuple du Grassfield</div></div>
+      <div class="aire-card"><img class="aire-photo" src="/static/images/nord_people.jpeg" alt="Peuple Soudano-Sahélien"><div class="aire-name">Peuple Soudano-Sahélien</div></div>
     </div>
   </div>
 
@@ -379,365 +373,99 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;}
 
   <div class="about-section">
     <div class="about-grid">
-      <div>
-        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--leaf);margin-bottom:9px;">L'événement</div>
-        <h2 class="about-title">La célébration de la <span style="color:var(--gold)">culture</span> et de l'<span style="color:var(--leaf)">excellence</span></h2>
-        <p class="about-text">Terra Viva Royalty Day est une foire culturelle co-organisée par le <strong>Département des Sciences Environnementales</strong> et le <strong>Département d'Agriculture Élevage et Produits Dérivés</strong> de l'ENSPM Maroua.</p>
-        <p class="about-text">Votez pour votre <strong>Miss Terra Viva</strong> et votre <strong>Master Terra Viva</strong> 2026 — seulement <strong>25 FCFA</strong> via Orange Money ou MTN MoMo.</p>
-        <p style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gold);font-size:15px;">"Notre Culture au Cœur de l'Ingénierie"</p>
-      </div>
-      <div class="about-cards">
-        <div class="about-card"><div class="about-card-icon">👑</div><div class="about-card-num" id="aboutMissCount">—</div><div class="about-card-label">Miss candidates</div></div>
-        <div class="about-card"><div class="about-card-icon">🌍</div><div class="about-card-num" id="aboutMasterCount">—</div><div class="about-card-label">Master candidates</div></div>
-        <div class="about-card"><div class="about-card-icon">📱</div><div class="about-card-num">25F</div><div class="about-card-label">Prix du vote</div></div>
-        <div class="about-card"><div class="about-card-icon">📅</div><div class="about-card-num">9 MAI</div><div class="about-card-label">Jour de l'événement</div></div>
-      </div>
+      <div><div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--leaf);margin-bottom:9px;">L'événement</div><h2 class="about-title">La célébration de la <span style="color:var(--gold)">culture</span> et de l'<span style="color:var(--leaf)">excellence</span></h2><p class="about-text">Terra Viva Royalty Day est une foire culturelle co-organisée par le <strong>Département des Sciences Environnementales</strong> et le <strong>Département d'Agriculture Élevage et Produits Dérivés</strong> de l'ENSPM Maroua.</p><p class="about-text">Votez pour votre <strong>Miss Terra Viva</strong> et votre <strong>Master Terra Viva</strong> 2026 — seulement <strong>25 FCFA</strong> via Orange Money ou MTN MoMo.</p><p style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gold);font-size:15px;">"Notre Culture au Cœur de l'Ingénierie"</p></div>
+      <div class="about-cards"><div class="about-card"><div class="about-card-icon">👑</div><div class="about-card-num" id="aboutMissCount">—</div><div class="about-card-label">Miss candidates</div></div><div class="about-card"><div class="about-card-icon">🌍</div><div class="about-card-num" id="aboutMasterCount">—</div><div class="about-card-label">Master candidates</div></div><div class="about-card"><div class="about-card-icon">📱</div><div class="about-card-num">25F</div><div class="about-card-label">Prix du vote</div></div><div class="about-card"><div class="about-card-icon">📅</div><div class="about-card-num">9 MAI</div><div class="about-card-label">Jour de l'événement</div></div></div>
     </div>
   </div>
 
   <div class="contact-section">
-    <div class="contact-inner">
-      <div>
-        <div class="contact-title">Contacts</div>
-        <div class="contact-numbers">
-          <span class="contact-num">📞 6 56 94 24 25</span>
-          <span class="contact-num">📞 6 93 48 36 57</span>
-          <span class="contact-num">📞 6 55 27 20 31</span>
-          <span class="contact-num">📞 6 90 53 72 78</span>
-        </div>
-      </div>
-      <div>
-        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">Notre devise</div>
-        <div style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gold);font-size:15px;text-align:right;">"Parce que notre Culture<br>définit qui nous sommes"</div>
-      </div>
-    </div>
+    <div class="contact-inner"><div><div class="contact-title">Contacts</div><div class="contact-numbers"><span class="contact-num">📞 6 56 94 24 25</span><span class="contact-num">📞 6 93 48 36 57</span><span class="contact-num">📞 6 55 27 20 31</span><span class="contact-num">📞 6 90 53 72 78</span></div></div><div><div style="font-size:10px;color:var(--muted);margin-bottom:4px;">Notre devise</div><div style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gold);font-size:15px;text-align:right;">"Parce que notre Culture<br>définit qui nous sommes"</div></div></div>
   </div>
 
-  <footer>
-    <div class="footer-clubs">
-      <span class="footer-club">🌿 Club Sciences de l'Environnement</span>
-      <span style="color:var(--border)">|</span>
-      <span class="footer-club">⚡ Club AGEPD-ENSPM</span>
-    </div>
-    <div class="footer-name">Terra Viva Royalty Day</div>
-    <div class="footer-text">ENSPM Maroua · Alliance Française de Garoua, Antenne de Maroua · Samedi 9 Mai 2026 · 13H00</div>
-  </footer>
+  <footer><div class="footer-clubs"><span class="footer-club">🌿 Club Sciences de l'Environnement</span><span style="color:var(--border)">|</span><span class="footer-club">⚡ Club AGEPD-ENSPM</span></div><div class="footer-name">Terra Viva Royalty Day</div><div class="footer-text">ENSPM Maroua · Alliance Française de Garoua, Antenne de Maroua · Samedi 9 Mai 2026 · 13H00</div></footer>
 </div>
 
-<!-- ══ CANDIDATES ══ -->
+<!-- CANDIDATES PAGE -->
 <div class="page" id="candidates-page">
-  <div class="page-header">
-    <div>
-      <div style="font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Terra Viva Royalty Day 2026</div>
-      <h1 class="page-title">Nos <span>Candidats</span></h1>
-    </div>
-    <div style="text-align:right;"><div style="font-size:11px;color:var(--muted);" id="candSubtitle">Chargement...</div></div>
-  </div>
-  <div class="filters-bar">
-    <button class="tab-btn active-all" id="tab-all" onclick="filterCandidates('all')">✦ Tous</button>
-    <button class="tab-btn" id="tab-miss" onclick="filterCandidates('miss')">👑 Miss Terra Viva</button>
-    <button class="tab-btn" id="tab-master" onclick="filterCandidates('master')">🌍 Master Terra Viva</button>
-    <div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Rechercher..." id="searchInput" oninput="renderCandidates()"></div>
-  </div>
+  <div class="page-header"><div><div style="font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Terra Viva Royalty Day 2026</div><h1 class="page-title">Nos <span>Candidats</span></h1></div><div style="text-align:right;"><div style="font-size:11px;color:var(--muted);" id="candSubtitle">Chargement...</div></div></div>
+  <div class="filters-bar"><button class="tab-btn active-all" data-filter="all">✦ Tous</button><button class="tab-btn" data-filter="miss">👑 Miss Terra Viva</button><button class="tab-btn" data-filter="master">🌍 Master Terra Viva</button><div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Rechercher..." id="searchInput"></div></div>
   <div class="candidates-grid" id="candidatesGrid"><div class="loading-state" style="grid-column:1/-1"><div class="spinner"></div>Chargement...</div></div>
   <footer><div class="footer-name">Terra Viva Royalty Day</div><div class="footer-text">ENSPM Maroua · 2026</div></footer>
 </div>
 
-<!-- ══ PROFILE ══ -->
+<!-- PROFILE PAGE -->
 <div class="page" id="profile-page">
   <div class="profile-cover" id="profileCover"></div>
-  <div class="profile-container">
-    <button class="btn-back" onclick="showPage('candidates')" style="margin-top:13px;">← Retour</button>
+  <div class="profile-container"><button class="btn-back" id="profileBackBtn">← Retour</button>
     <div class="profile-photo-wrap"><div class="profile-photo" id="profileAvatar"></div></div>
-    <div class="profile-info">
-      <div class="profile-category" id="profileCategory"></div>
-      <h1 class="profile-name" id="profileName"></h1>
-      <div class="profile-meta" id="profileMeta"></div>
-    </div>
+    <div class="profile-info"><div class="profile-category" id="profileCategory"></div><h1 class="profile-name" id="profileName"></h1><div class="profile-meta" id="profileMeta"></div></div>
     <div class="profile-quote" id="profileQuote"></div>
-    <div class="profile-stats">
-      <div class="profile-stat"><div class="profile-stat-num" id="profileVotes">—</div><div class="profile-stat-label">Votes</div></div>
-      <div class="profile-stat"><div class="profile-stat-num" id="profileRank">—</div><div class="profile-stat-label">Classement</div></div>
-      <div class="profile-stat"><div class="profile-stat-num" id="profileNum">—</div><div class="profile-stat-label">Numéro</div></div>
-    </div>
+    <div class="profile-stats"><div class="profile-stat"><div class="profile-stat-num" id="profileVotes">—</div><div class="profile-stat-label">Votes</div></div><div class="profile-stat"><div class="profile-stat-num" id="profileRank">—</div><div class="profile-stat-label">Classement</div></div><div class="profile-stat"><div class="profile-stat-num" id="profileNum">—</div><div class="profile-stat-label">Numéro</div></div></div>
     <p class="profile-bio" id="profileBio"></p>
-    <div class="vote-action-card">
-      <h3 class="vote-action-title" id="voteActionTitle">Voter</h3>
-      <p class="vote-action-subtitle">25 FCFA — Orange Money ou MTN MoMo</p>
-      <div class="payment-methods">
-        <div class="payment-option" id="opt-orange" onclick="selectPayment('orange')">
-          <div class="payment-logo orange-logo">OM</div>
-          <div><div class="payment-name">Orange Money</div><div class="payment-price">25 FCFA</div></div>
-        </div>
-        <div class="payment-option" id="opt-mtn" onclick="selectPayment('mtn')">
-          <div class="payment-logo mtn-logo">MTN</div>
-          <div><div class="payment-name">MTN MoMo</div><div class="payment-price">25 FCFA</div></div>
-        </div>
-      </div>
-      <button class="btn-vote-big" id="mainVoteBtn" onclick="openVoteModal()">🗳 Voter — 25 FCFA</button>
+    <div class="vote-action-card"><h3 class="vote-action-title" id="voteActionTitle">Voter</h3><p class="vote-action-subtitle">25 FCFA — Orange Money ou MTN MoMo</p>
+      <div class="payment-methods"><div class="payment-option" id="opt-orange"><div class="payment-logo orange-logo">OM</div><div><div class="payment-name">Orange Money</div><div class="payment-price">25 FCFA</div></div></div><div class="payment-option" id="opt-mtn"><div class="payment-logo mtn-logo">MTN</div><div><div class="payment-name">MTN MoMo</div><div class="payment-price">25 FCFA</div></div></div></div>
+      <button class="btn-vote-big" id="mainVoteBtn">🗳 Voter — 25 FCFA</button>
     </div>
-    <div class="share-buttons">
-      <button class="btn-share whatsapp" onclick="shareWhatsApp()">💬 Partager sur WhatsApp</button>
-      <button class="btn-share facebook" onclick="shareFacebook()">👍 Partager sur Facebook</button>
-    </div>
+    <div class="share-buttons"><button class="btn-share whatsapp" id="shareWhatsappBtn">💬 Partager sur WhatsApp</button><button class="btn-share facebook" id="shareFacebookBtn">👍 Partager sur Facebook</button></div>
   </div>
   <footer><div class="footer-name">Terra Viva Royalty Day</div><div class="footer-text">ENSPM Maroua · 2026</div></footer>
 </div>
 
-<!-- ══ RESULTS ══ -->
+<!-- RESULTS PAGE -->
 <div class="page" id="results-page">
-  <div class="results-container">
-    <h1 class="results-title">Résultats <span>en direct</span></h1>
-    <div class="results-status">
-      <div class="status-live"></div>Terra Viva 2026 · Votes en cours
-      <button onclick="loadResults()" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 9px;color:var(--muted);cursor:pointer;font-size:10px;font-family:'DM Sans',sans-serif;margin-left:6px;">↺ Actualiser</button>
-    </div>
-    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--miss);margin-bottom:16px;">👑 Podium Miss Terra Viva</div>
-    <div class="podium" id="missPodium"><div class="loading-state" style="width:100%"><div class="spinner"></div></div></div>
-    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--master);margin-bottom:16px;margin-top:32px;">🌍 Podium Master Terra Viva</div>
-    <div class="podium" id="masterPodium"><div class="loading-state" style="width:100%"><div class="spinner"></div></div></div>
-    <div class="results-tabs" style="margin-top:32px;">
-      <button class="rtab active-miss" id="rtab-miss" onclick="switchResultTab('miss')">Miss Terra Viva</button>
-      <button class="rtab" id="rtab-master" onclick="switchResultTab('master')">Master Terra Viva</button>
-    </div>
+  <div class="results-container"><h1 class="results-title">Résultats <span>en direct</span></h1><div class="results-status"><div class="status-live"></div>Terra Viva 2026 · Votes en cours<button id="refreshResultsBtn" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 9px;color:var(--muted);cursor:pointer;font-size:10px;font-family:'DM Sans',sans-serif;margin-left:6px;">↺ Actualiser</button></div>
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--miss);margin-bottom:16px;">👑 Podium Miss Terra Viva</div><div class="podium" id="missPodium"><div class="loading-state" style="width:100%"><div class="spinner"></div></div></div>
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--master);margin-bottom:16px;margin-top:32px;">🌍 Podium Master Terra Viva</div><div class="podium" id="masterPodium"><div class="loading-state" style="width:100%"><div class="spinner"></div></div></div>
+    <div class="results-tabs" style="margin-top:32px;"><button class="rtab active-miss" data-rtab="miss">Miss Terra Viva</button><button class="rtab" data-rtab="master">Master Terra Viva</button></div>
     <div class="results-list" id="resultsList"></div>
   </div>
   <footer><div class="footer-name">Terra Viva Royalty Day</div><div class="footer-text">ENSPM Maroua · 2026</div></footer>
 </div>
 
-<!-- ══ ADMIN ══ -->
+<!-- ADMIN PAGE -->
 <div class="page" id="admin-page">
-  <div class="admin-container">
-    <div class="admin-header">
-      <h1 class="admin-title">Tableau de bord 🛡</h1>
-      <div class="admin-badge">Super Admin</div>
-    </div>
-    <div class="admin-stats">
-      <div class="admin-stat"><div class="admin-stat-num" id="as-votes">—</div><div class="admin-stat-label">Votes total</div></div>
-      <div class="admin-stat"><div class="admin-stat-num" id="as-candidates">—</div><div class="admin-stat-label">Candidats</div></div>
-      <div class="admin-stat"><div class="admin-stat-num" id="as-revenue">—</div><div class="admin-stat-label">FCFA collectés</div></div>
-      <div class="admin-stat"><div class="admin-stat-num" id="as-voters">—</div><div class="admin-stat-label">Votants uniques</div></div>
-    </div>
-    <div class="admin-tabs">
-      <button class="admin-tab active" onclick="switchAdminTab(this,'panel-candidates')">Candidats</button>
-      <button class="admin-tab" onclick="switchAdminTab(this,'panel-add')">+ Ajouter</button>
-      <button class="admin-tab" onclick="switchAdminTab(this,'panel-voting')">Paramètres</button>
-      <button class="admin-tab" onclick="switchAdminTab(this,'panel-logs')">Audit</button>
-    </div>
-    <div class="admin-panel active" id="panel-candidates">
-      <table class="vote-table">
-        <thead><tr><th>#</th><th>Nom</th><th>Catégorie</th><th>Département</th><th>Votes</th><th>Statut</th><th>Action</th></tr></thead>
-        <tbody id="adminCandidateTable"><tr><td colspan="7" style="text-align:center;padding:28px;"><div class="spinner" style="margin:auto"></div></td></tr></tbody>
-      </table>
-    </div>
-    <div class="admin-panel" id="panel-add">
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:13px;padding:22px;">
-        <h3 style="font-family:'Cormorant Garamond',serif;font-size:20px;margin-bottom:18px;">Ajouter un candidat</h3>
-        <div class="form-grid">
-          <div class="form-group"><label class="form-label">Nom complet</label><input class="form-input" type="text" id="f-name" placeholder="Ex: Marie Nguesso"></div>
-          <div class="form-group"><label class="form-label">Catégorie</label><select class="form-select" id="f-category"><option value="miss">Miss Terra Viva</option><option value="master">Master Terra Viva</option></select></div>
-          <div class="form-group"><label class="form-label">Département</label><select class="form-select" id="f-dept"><option>Sciences Environnementales</option><option>Agriculture Élevage et Produits Dérivés</option><option>Génie Civil</option><option>Génie Électrique</option><option>Génie Informatique</option><option>Génie Mécanique</option><option>Énergie Renouvelable</option><option>Informatique et Télécommunication</option></select></div>
-          <div class="form-group"><label class="form-label">Année d'étude</label><select class="form-select" id="f-year"><option>Niveau 1</option><option>Niveau 2</option><option>Niveau 3</option><option>Niveau 4</option><option>IC1</option><option>IC2</option><option>Master 1</option><option>Master 2</option></select></div>
-          <div class="form-group"><label class="form-label">Âge</label><input class="form-input" type="number" id="f-age" min="16" max="35" placeholder="22"></div>
-          <div class="form-group"><label class="form-label">Statut</label><select class="form-select" id="f-status"><option value="active">Actif</option><option value="draft">Brouillon</option></select></div>
-        </div>
-        <div class="form-group"><label class="form-label">Citation / Aspiration</label><input class="form-input" type="text" id="f-quote" placeholder="Sa devise..."></div>
-        <div class="form-group"><label class="form-label">Biographie</label><textarea class="form-textarea" id="f-bio" placeholder="Présentation du candidat..."></textarea></div>
-        <div style="display:flex;gap:9px;margin-top:6px;">
-          <button class="modal-btn modal-btn-gold" style="flex:1;padding:12px;" onclick="addCandidate()">✓ Enregistrer</button>
-          <button class="modal-btn" style="flex:0.4;background:var(--card);border:1px solid var(--border);color:var(--muted);">Brouillon</button>
-        </div>
-      </div>
-    </div>
-    <div class="admin-panel" id="panel-voting">
-      <div id="settingsPanel"><div class="loading-state"><div class="spinner"></div></div></div>
-    </div>
-    <div class="admin-panel" id="panel-logs">
-      <table class="vote-table">
-        <thead><tr><th>Date/Heure</th><th>Candidat</th><th>Catégorie</th><th>Paiement</th><th>Téléphone</th><th>IP</th></tr></thead>
-        <tbody id="auditTable"><tr><td colspan="6" style="text-align:center;padding:28px;"><div class="spinner" style="margin:auto"></div></td></tr></tbody>
-      </table>
-    </div>
+  <div class="admin-container"><div class="admin-header"><h1 class="admin-title">Tableau de bord 🛡</h1><div class="admin-badge" id="adminRoleBadge">Super Admin</div></div>
+    <div class="admin-stats"><div class="admin-stat"><div class="admin-stat-num" id="as-votes">—</div><div class="admin-stat-label">Votes total</div></div><div class="admin-stat"><div class="admin-stat-num" id="as-candidates">—</div><div class="admin-stat-label">Candidats</div></div><div class="admin-stat"><div class="admin-stat-num" id="as-revenue">—</div><div class="admin-stat-label">FCFA collectés</div></div><div class="admin-stat"><div class="admin-stat-num" id="as-voters">—</div><div class="admin-stat-label">Votants uniques</div></div></div>
+    <div class="admin-tabs"><button class="admin-tab active" data-panel="panel-candidates">Candidats</button><button class="admin-tab" data-panel="panel-add">+ Ajouter</button><button class="admin-tab" data-panel="panel-voting">Paramètres</button><button class="admin-tab" data-panel="panel-logs">Audit</button></div>
+    <div class="admin-panel active" id="panel-candidates"><table class="vote-table"><thead><tr><th>#</th><th>Nom</th><th>Catégorie</th><th>Département</th><th>Votes</th><th>Statut</th><th>Action</th></tr></thead><tbody id="adminCandidateTable"><tr><td colspan="7" style="text-align:center;padding:28px;"><div class="spinner" style="margin:auto"></div></td></tr></tbody></table></div>
+    <div class="admin-panel" id="panel-add"><div style="background:var(--card);border:1px solid var(--border);border-radius:13px;padding:22px;"><h3 style="font-family:'Cormorant Garamond',serif;font-size:20px;margin-bottom:18px;">Ajouter un candidat</h3><div class="form-grid"><div class="form-group"><label class="form-label">Nom complet</label><input class="form-input" type="text" id="f-name" placeholder="Ex: Marie Nguesso"></div><div class="form-group"><label class="form-label">Catégorie</label><select class="form-select" id="f-category"><option value="miss">Miss Terra Viva</option><option value="master">Master Terra Viva</option></select></div><div class="form-group"><label class="form-label">Département</label><select class="form-select" id="f-dept"><option>Sciences Environnementales</option><option>Agriculture Élevage et Produits Dérivés</option><option>Génie Civil</option><option>Génie Électrique</option><option>Génie Informatique</option><option>Génie Mécanique</option><option>Énergie Renouvelable</option><option>Informatique et Télécommunication</option></select></div><div class="form-group"><label class="form-label">Année d'étude</label><select class="form-select" id="f-year"><option>Niveau 1</option><option>Niveau 2</option><option>Niveau 3</option><option>Niveau 4</option><option>IC1</option><option>IC2</option><option>Master 1</option><option>Master 2</option></select></div><div class="form-group"><label class="form-label">Âge</label><input class="form-input" type="number" id="f-age" min="16" max="35" placeholder="22"></div><div class="form-group"><label class="form-label">Statut</label><select class="form-select" id="f-status"><option value="active">Actif</option><option value="draft">Brouillon</option></select></div></div><div class="form-group"><label class="form-label">Citation / Aspiration</label><input class="form-input" type="text" id="f-quote" placeholder="Sa devise..."></div><div class="form-group"><label class="form-label">Biographie</label><textarea class="form-textarea" id="f-bio" placeholder="Présentation du candidat..."></textarea></div><div style="display:flex;gap:9px;margin-top:6px;"><button class="modal-btn modal-btn-gold" style="flex:1;padding:12px;" id="addCandidateBtn">✓ Enregistrer</button><button class="modal-btn" style="flex:0.4;background:var(--card);border:1px solid var(--border);color:var(--muted);">Brouillon</button></div></div></div>
+    <div class="admin-panel" id="panel-voting"><div id="settingsPanel"><div class="loading-state"><div class="spinner"></div></div></div></div>
+    <div class="admin-panel" id="panel-logs"><table class="vote-table"><thead><tr><th>Date/Heure</th><th>Candidat</th><th>Catégorie</th><th>Paiement</th><th>Téléphone</th><th>IP</th></tr></thead><tbody id="auditTable"><tr><td colspan="6" style="text-align:center;padding:28px;"><div class="spinner" style="margin:auto"></div></td></tr></tbody></table></div>
   </div>
   <footer><div class="footer-name">Terra Viva Royalty Day</div><div class="footer-text">ENSPM Maroua · Panel Admin · 2026</div></footer>
 </div>
 
-<!-- ══ VOTE MODAL ══ -->
+<!-- VOTE MODAL -->
 <div class="modal-overlay" id="voteModal">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal()">✕</button>
-    <div class="step-indicator">
-      <div class="step-dot active" id="dot1"></div>
-      <div class="step-dot" id="dot2"></div>
-      <div class="step-dot" id="dot3"></div>
-    </div>
-
-    <!-- Step 1 — Payment method -->
-    <div class="step active" id="step1">
-      <h2 class="modal-title">Confirmer le vote</h2>
-      <p class="modal-subtitle">Terra Viva Royalty Day 2026 — 25 FCFA</p>
-      <div class="modal-candidate-preview">
-        <div class="modal-candidate-avatar" id="modalAvatar"></div>
-        <div><div class="modal-candidate-name" id="modalName"></div><div class="modal-candidate-class" id="modalClass"></div></div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Mode de paiement</label>
-        <div class="payment-select-row">
-          <div class="pay-opt sel-orange" id="modal-orange" onclick="selectModalPayment('orange')"><div class="pay-opt-logo">🟠</div><div class="pay-opt-name">Orange Money</div><div class="pay-opt-price">25 FCFA</div></div>
-          <div class="pay-opt" id="modal-mtn" onclick="selectModalPayment('mtn')"><div class="pay-opt-logo">🟡</div><div class="pay-opt-name">MTN MoMo</div><div class="pay-opt-price">25 FCFA</div></div>
-        </div>
-      </div>
-      <button class="modal-btn modal-btn-gold" onclick="goToStep(2)">Continuer →</button>
-    </div>
-
-    <!-- Step 2 — Voter info + INTERNATIONAL PHONE -->
-    <div class="step" id="step2">
-      <h2 class="modal-title">Vos informations</h2>
-      <p class="modal-subtitle">Informations du votant + paiement</p>
-
-      <div class="form-group">
-        <label class="form-label">Nom complet *</label>
-        <input class="form-input" type="text" id="fullNameInput" placeholder="Ex: Jean Dupont">
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Email (optionnel)</label>
-        <input class="form-input" type="email" id="emailInput" placeholder="exemple@gmail.com">
-        <div class="field-error" id="emailError"></div>
-      </div>
-
-      <div class="form-group">
-        <div class="student-toggle">
-          <label class="form-label">Étudiant ENSPM ?</label>
-          <label class="toggle"><input type="checkbox" id="isStudentInput"><span class="toggle-slider"></span></label>
-        </div>
-      </div>
-
-      <div class="form-group" id="studentFields" style="display:none;">
-        <label class="form-label">Matricule étudiant ENSPM</label>
-        <input class="form-input" type="text" id="matriculeInput" placeholder="Ex: 23ENV001">
-      </div>
-
-      <!-- ── PHONE WITH COUNTRY CODE ── -->
-      <div class="form-group">
-        <label class="form-label">
-          Numéro <span id="paymentLabel" style="color:var(--gold)">Orange Money</span> *
-        </label>
-        <div class="phone-row">
-          <select class="country-select" id="countryCode">
-            <option value="+237">🇨🇲 +237</option>
-            <option value="+33">🇫🇷 +33</option>
-            <option value="+32">🇧🇪 +32</option>
-            <option value="+41">🇨🇭 +41</option>
-            <option value="+1">🇺🇸 +1</option>
-            <option value="+1">🇨🇦 +1</option>
-            <option value="+44">🇬🇧 +44</option>
-            <option value="+49">🇩🇪 +49</option>
-            <option value="+34">🇪🇸 +34</option>
-            <option value="+39">🇮🇹 +39</option>
-            <option value="+31">🇳🇱 +31</option>
-            <option value="+351">🇵🇹 +351</option>
-            <option value="+61">🇦🇺 +61</option>
-            <option value="+234">🇳🇬 +234</option>
-            <option value="+225">🇨🇮 +225</option>
-            <option value="+221">🇸🇳 +221</option>
-            <option value="+242">🇨🇬 +242</option>
-            <option value="+241">🇬🇦 +241</option>
-            <option value="+240">🇬🇶 +240</option>
-            <option value="+236">🇨🇫 +236</option>
-            <option value="+235">🇹🇩 +235</option>
-            <option value="+27">🇿🇦 +27</option>
-            <option value="+212">🇲🇦 +212</option>
-            <option value="+216">🇹🇳 +216</option>
-            <option value="+213">🇩🇿 +213</option>
-            <option value="+20">🇪🇬 +20</option>
-            <option value="+254">🇰🇪 +254</option>
-            <option value="+229">🇧🇯 +229</option>
-            <option value="+228">🇹🇬 +228</option>
-            <option value="+226">🇧🇫 +226</option>
-            <option value="+223">🇲🇱 +223</option>
-            <option value="+227">🇳🇪 +227</option>
-            <option value="+257">🇧🇮 +257</option>
-            <option value="+250">🇷🇼 +250</option>
-          </select>
-          <input class="form-input" type="tel" id="phoneInput" placeholder="6XX XX XX XX" style="flex:1;">
-        </div>
-        <div class="field-error" id="phoneError"></div>
-        <div style="font-size:10px;color:var(--muted);margin-top:5px;">
-          🌍 Famille à l'étranger ? Sélectionnez votre pays puis entrez le numéro sans le 0 initial.
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label class="consent-row">
-          <input type="checkbox" id="consentInput">
-          <span class="consent-text">J'accepte les conditions d'utilisation de la plateforme Terra Viva.</span>
-        </label>
-      </div>
-
-      <button class="modal-btn modal-btn-gold" id="payBtn" onclick="initiatePayment()">Payer 25 FCFA →</button>
-      <button class="modal-btn" onclick="goToStep(1)" style="background:none;border:1px solid var(--border);color:var(--muted);margin-top:6px;">← Retour</button>
-    </div>
-
-    <!-- Step 3 — Confirm payment -->
-    <div class="step" id="step3">
-      <h2 class="modal-title">Confirmez sur votre téléphone</h2>
-      <p class="modal-subtitle">Approuvez la demande de paiement sur votre téléphone.</p>
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center;margin-bottom:16px;">
-        <div style="font-size:42px;margin-bottom:6px;" id="paymentIcon">🟠</div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:3px;">Montant</div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--gold);">25 FCFA</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:6px;" id="phoneDisplay"></div>
-        <div style="font-size:10px;color:var(--muted);margin-top:3px;" id="refDisplay"></div>
-      </div>
-      <div style="background:rgba(122,182,72,0.05);border:1px solid rgba(122,182,72,0.15);border-radius:8px;padding:11px;margin-bottom:16px;font-size:12px;color:rgba(240,234,216,0.7);line-height:1.6;">
-        📱 Consultez votre téléphone et approuvez la demande de paiement pour valider votre vote.
-      </div>
-      <button class="modal-btn modal-btn-gold" onclick="confirmVote()" id="confirmBtn">✓ J'ai confirmé le paiement</button>
-      <div style="text-align:center;margin-top:9px;">
-        <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;font-family:'DM Sans',sans-serif;" onclick="goToStep(2)">Pas reçu ? Modifier le numéro</button>
-      </div>
-    </div>
-
-    <!-- Success -->
-    <div class="step" id="stepSuccess">
-      <div class="success-state">
-        <div class="success-icon">🌿</div>
-        <h2 class="success-title">Vote enregistré !</h2>
-        <p class="success-msg" id="successMsg"></p>
-        <div style="margin-top:18px;padding:13px;background:var(--card);border-radius:8px;border:1px solid var(--border);">
-          <div style="font-size:10px;color:var(--muted);margin-bottom:3px;">Événement</div>
-          <div style="font-weight:600;font-size:13px;">Samedi 9 Mai 2026 · 13H00</div>
-          <div style="font-size:11px;color:var(--muted);">Alliance Française de Garoua, Antenne de Maroua</div>
-        </div>
-        <button class="modal-btn modal-btn-gold" style="margin-top:16px;" onclick="closeModal();showPage('results')">Voir les résultats →</button>
-      </div>
-    </div>
+  <div class="modal"><button class="modal-close" id="closeModalBtn">✕</button>
+    <div class="step-indicator"><div class="step-dot active" id="dot1"></div><div class="step-dot" id="dot2"></div><div class="step-dot" id="dot3"></div></div>
+    <div class="step active" id="step1"><h2 class="modal-title">Confirmer le vote</h2><p class="modal-subtitle">Terra Viva Royalty Day 2026 — 25 FCFA</p><div class="modal-candidate-preview"><div class="modal-candidate-avatar" id="modalAvatar"></div><div><div class="modal-candidate-name" id="modalName"></div><div class="modal-candidate-class" id="modalClass"></div></div></div><div class="form-group"><label class="form-label">Mode de paiement</label><div class="payment-select-row"><div class="pay-opt sel-orange" data-pay="orange"><div class="pay-opt-logo">🟠</div><div class="pay-opt-name">Orange Money</div><div class="pay-opt-price">25 FCFA</div></div><div class="pay-opt" data-pay="mtn"><div class="pay-opt-logo">🟡</div><div class="pay-opt-name">MTN MoMo</div><div class="pay-opt-price">25 FCFA</div></div></div></div><button class="modal-btn modal-btn-gold" id="step1NextBtn">Continuer →</button></div>
+    <div class="step" id="step2"><h2 class="modal-title">Vos informations</h2><p class="modal-subtitle">Informations du votant + paiement</p><div class="form-group"><label class="form-label">Nom complet *</label><input class="form-input" type="text" id="fullNameInput" placeholder="Ex: Jean Dupont"></div><div class="form-group"><label class="form-label">Email (optionnel)</label><input class="form-input" type="email" id="emailInput" placeholder="exemple@gmail.com"><div class="field-error" id="emailError"></div></div><div class="form-group"><div class="student-toggle"><label class="form-label">Étudiant ENSPM ?</label><label class="toggle"><input type="checkbox" id="isStudentInput"><span class="toggle-slider"></span></label></div></div><div class="form-group" id="studentFields" style="display:none;"><label class="form-label">Matricule étudiant ENSPM</label><input class="form-input" type="text" id="matriculeInput" placeholder="Ex: 23ENV001"></div><div class="form-group"><label class="form-label">Numéro <span id="paymentLabel">Orange Money</span> *</label><div class="phone-row"><select class="country-select" id="countryCode"><option value="+237">🇨🇲 +237</option><option value="+33">🇫🇷 +33</option><option value="+32">🇧🇪 +32</option><option value="+41">🇨🇭 +41</option><option value="+1">🇺🇸 +1</option><option value="+1">🇨🇦 +1</option><option value="+44">🇬🇧 +44</option><option value="+49">🇩🇪 +49</option><option value="+34">🇪🇸 +34</option><option value="+39">🇮🇹 +39</option><option value="+31">🇳🇱 +31</option><option value="+351">🇵🇹 +351</option><option value="+61">🇦🇺 +61</option><option value="+234">🇳🇬 +234</option><option value="+225">🇨🇮 +225</option><option value="+221">🇸🇳 +221</option><option value="+242">🇨🇬 +242</option><option value="+241">🇬🇦 +241</option><option value="+240">🇬🇶 +240</option><option value="+236">🇨🇫 +236</option><option value="+235">🇹🇩 +235</option><option value="+27">🇿🇦 +27</option><option value="+212">🇲🇦 +212</option><option value="+216">🇹🇳 +216</option><option value="+213">🇩🇿 +213</option><option value="+20">🇪🇬 +20</option><option value="+254">🇰🇪 +254</option><option value="+229">🇧🇯 +229</option><option value="+228">🇹🇬 +228</option><option value="+226">🇧🇫 +226</option><option value="+223">🇲🇱 +223</option><option value="+227">🇳🇪 +227</option><option value="+257">🇧🇮 +257</option><option value="+250">🇷🇼 +250</option></select><input class="form-input" type="tel" id="phoneInput" placeholder="6XX XX XX XX" style="flex:1;"></div><div class="field-error" id="phoneError"></div><div style="font-size:10px;color:var(--muted);margin-top:5px;">🌍 Famille à l'étranger ? Sélectionnez votre pays puis entrez le numéro sans le 0 initial.</div></div><div class="form-group"><label class="consent-row"><input type="checkbox" id="consentInput"><span class="consent-text">J'accepte les conditions d'utilisation de la plateforme Terra Viva.</span></label></div><button class="modal-btn modal-btn-gold" id="payBtn">Payer 25 FCFA →</button><button class="modal-btn" id="step2BackBtn" style="background:none;border:1px solid var(--border);color:var(--muted);margin-top:6px;">← Retour</button></div>
+    <div class="step" id="step3"><h2 class="modal-title">Confirmez sur votre téléphone</h2><p class="modal-subtitle">Approuvez la demande de paiement sur votre téléphone.</p><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center;margin-bottom:16px;"><div style="font-size:42px;margin-bottom:6px;" id="paymentIcon">🟠</div><div style="font-size:11px;color:var(--muted);margin-bottom:3px;">Montant</div><div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--gold);">25 FCFA</div><div style="font-size:11px;color:var(--muted);margin-top:6px;" id="phoneDisplay"></div><div style="font-size:10px;color:var(--muted);margin-top:3px;" id="refDisplay"></div></div><div style="background:rgba(122,182,72,0.05);border:1px solid rgba(122,182,72,0.15);border-radius:8px;padding:11px;margin-bottom:16px;font-size:12px;color:rgba(240,234,216,0.7);line-height:1.6;">📱 Consultez votre téléphone et approuvez la demande de paiement pour valider votre vote.</div><button class="modal-btn modal-btn-gold" id="confirmVoteBtn">✓ J'ai confirmé le paiement</button><div style="text-align:center;margin-top:9px;"><button id="step3BackBtn" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;font-family:'DM Sans',sans-serif;">Pas reçu ? Modifier le numéro</button></div></div>
+    <div class="step" id="stepSuccess"><div class="success-state"><div class="success-icon">🌿</div><h2 class="success-title">Vote enregistré !</h2><p class="success-msg" id="successMsg"></p><div style="margin-top:18px;padding:13px;background:var(--card);border-radius:8px;border:1px solid var(--border);"><div style="font-size:10px;color:var(--muted);margin-bottom:3px;">Événement</div><div style="font-weight:600;font-size:13px;">Samedi 9 Mai 2026 · 13H00</div><div style="font-size:11px;color:var(--muted);">Alliance Française de Garoua, Antenne de Maroua</div></div><button class="modal-btn modal-btn-gold" id="successViewResultsBtn" style="margin-top:16px;">Voir les résultats →</button></div></div>
   </div>
 </div>
 
 <div class="notification" id="notification"><span id="notifIcon">✓</span> <span id="notifMsg">Action réalisée</span></div>
 
-<!-- ══ LOGIN MODAL ADMIN ══ -->
+<!-- LOGIN MODAL ADMIN -->
 <div class="modal-overlay" id="loginModal">
-  <div class="modal" style="max-width:360px;">
-    <h2 class="modal-title">🛡 Accès Admin</h2>
-    <p class="modal-subtitle">Connexion requise pour accéder au tableau de bord</p>
-    <div class="form-group" style="margin-top:16px;">
-      <label class="form-label">Nom d'utilisateur</label>
-      <input class="form-input" type="text" id="loginUsername" placeholder="admin" autocomplete="username">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Mot de passe</label>
-      <input class="form-input" type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
-      <div id="loginError" style="display:none;color:var(--miss);font-size:12px;margin-top:6px;"></div>
-    </div>
-    <button class="modal-btn modal-btn-gold" id="loginBtn" onclick="submitLogin()" style="margin-top:8px;">Connexion →</button>
-    <button class="modal-btn" onclick="closeLoginModal()" style="background:none;border:1px solid var(--border);color:var(--muted);margin-top:6px;">Annuler</button>
-  </div>
+  <div class="modal" style="max-width:360px;"><h2 class="modal-title">🛡 Accès Admin</h2><p class="modal-subtitle">Connexion requise pour accéder au tableau de bord</p><div class="form-group" style="margin-top:16px;"><label class="form-label">Nom d'utilisateur</label><input class="form-input" type="text" id="loginUsername" placeholder="admin" autocomplete="username"></div><div class="form-group"><label class="form-label">Mot de passe</label><input class="form-input" type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password"><div id="loginError" style="display:none;color:var(--miss);font-size:12px;margin-top:6px;"></div></div><button class="modal-btn modal-btn-gold" id="loginBtn">Connexion →</button><button class="modal-btn" id="closeLoginModalBtn" style="background:none;border:1px solid var(--border);color:var(--muted);margin-top:6px;">Annuler</button></div>
 </div>
 
 <script>
+// ---------- SECURITE : échappement HTML ----------
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) { return c; });
+}
+
+// ---------- Variables globales ----------
 const API = '';
 let allCandidates = [];
 let currentFilter = 'all';
@@ -747,559 +475,450 @@ let currentResultTab = 'miss';
 let resultsData = null;
 let currentPaymentRef = null;
 let pollInterval = null;
-
-const EMOJIS = {
-  miss:   ['👩‍🌾','👩‍💻','👩‍🔬','👩‍🏫','👩‍🎓','🌺'],
-  master: ['👨‍🌾','👨‍💻','👨‍🔬','👨‍🏫','👨‍🎓','🌿']
-};
-function emojiFor(c) { return (EMOJIS[c.category]||EMOJIS.master)[(c.id-1)%6]; }
-
-// ── ADMIN AUTH ──────────────────────────────────────────────────
 let adminToken = sessionStorage.getItem('admin_token') || null;
 
-function getAuthHeaders() {
-  const base = {'Content-Type':'application/json'};
-  if (adminToken) base['Authorization'] = `Bearer ${adminToken}`;
-  return base;
-}
+const EMOJIS = { miss: ['👩‍🌾','👩‍💻','👩‍🔬','👩‍🏫','👩‍🎓','🌺'], master: ['👨‍🌾','👨‍💻','👨‍🔬','👨‍🏫','👨‍🎓','🌿'] };
+function emojiFor(c) { return (EMOJIS[c.category]||EMOJIS.master)[(c.id-1)%6]; }
 
+// ---------- Auth helpers ----------
+function getAuthHeaders() { const base = {'Content-Type':'application/json'}; if (adminToken) base['Authorization'] = `Bearer ${adminToken}`; return base; }
 function isAdminLoggedIn() {
   if (!adminToken) return false;
-  try {
-    const payload = JSON.parse(atob(adminToken.split('.')[1]));
-    if (payload.exp * 1000 < Date.now()) { adminLogout(); return false; }
-    return true;
-  } catch { return false; }
+  try { const payload = JSON.parse(atob(adminToken.split('.')[1])); if (payload.exp * 1000 < Date.now()) { adminLogout(); return false; } return true; } catch { return false; }
 }
+function adminLogout() { adminToken = null; sessionStorage.removeItem('admin_token'); sessionStorage.removeItem('admin_role'); showPage('hero'); showNotification('👋','Déconnecté'); }
 
-function adminLogout() {
-  adminToken = null;
-  sessionStorage.removeItem('admin_token');
-  sessionStorage.removeItem('admin_role');
-  showPage('hero');
-  showNotification('👋','Déconnecté');
-}
-
-function openLoginModal() {
-  document.getElementById('loginModal').classList.add('open');
-  setTimeout(()=>document.getElementById('loginUsername')?.focus(),100);
-}
-function closeLoginModal() {
-  document.getElementById('loginModal').classList.remove('open');
-  document.getElementById('loginError').style.display='none';
-  document.getElementById('loginPassword').value='';
-}
-
-async function submitLogin() {
-  const username = document.getElementById('loginUsername').value.trim();
-  const password = document.getElementById('loginPassword').value;
-  const errEl    = document.getElementById('loginError');
-  const btn      = document.getElementById('loginBtn');
-  errEl.style.display='none';
-  if (!username||!password){errEl.textContent='Veuillez remplir tous les champs';errEl.style.display='block';return;}
-  btn.disabled=true; btn.textContent='⏳ Connexion...';
-  try {
-    const res = await fetch('/api/auth/login',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({username,password}),
-    });
-    const data = await res.json();
-    if (!res.ok){errEl.textContent=data.detail||'Identifiants incorrects';errEl.style.display='block';return;}
-    adminToken = data.access_token;
-    sessionStorage.setItem('admin_token', adminToken);
-    sessionStorage.setItem('admin_role', data.role);
-    closeLoginModal();
-    showNotification('✅',`Connecté — ${username}`);
-    _showPage('admin');
-  } catch(e){errEl.textContent='Erreur réseau — réessayez';errEl.style.display='block';}
-  finally{btn.disabled=false;btn.textContent='Connexion →';}
-}
-
-// Fermer login modal en cliquant overlay
-document.getElementById('loginModal').addEventListener('click',e=>{
-  if(e.target.id==='loginModal') closeLoginModal();
-});
-// Enter key dans le login modal
-document.getElementById('loginModal').addEventListener('keydown',e=>{
-  if(e.key==='Enter') submitLogin();
-});
-
-// ── NAVIGATION ──────────────────────────────────────────────────
-function _showPage(page, filter) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById(page+'-page').classList.add('active');
-  const m={hero:'nav-home',candidates:'nav-candidates',results:'nav-results',admin:'nav-admin',profile:'nav-candidates'};
-  document.getElementById(m[page]||'nav-home')?.classList.add('active');
-  if (page==='candidates'){if(filter)filterCandidates(filter);loadCandidates();}
-  if (page==='results') loadResults();
-  if (page==='admin')   loadAdminData();
-  window.scrollTo(0,0);
-}
-
-function showPage(page, filter) {
-  // Intercepter l'accès admin — login requis
-  if (page==='admin') {
-    if (!isAdminLoggedIn()) { openLoginModal(); return; }
-  }
-  _showPage(page, filter);
-}
-
-// ── API ──
+// ---------- API ----------
 async function apiFetch(path, opts={}) {
-  // Ajouter le token JWT pour toutes les routes admin
-  if (path.startsWith('/api/admin')) {
-    opts.headers = {...getAuthHeaders(), ...opts.headers};
-  } else {
-    opts.headers = {'Content-Type':'application/json', ...opts.headers};
-  }
+  if (path.startsWith('/api/admin')) opts.headers = {...getAuthHeaders(), ...opts.headers};
+  else opts.headers = {'Content-Type':'application/json', ...opts.headers};
   try {
     const res = await fetch(API+path, opts);
     if (!res.ok) {
       const e = await res.json().catch(()=>({}));
-      // Token expiré → forcer reconnexion
       if (res.status===401) { adminLogout(); openLoginModal(); throw new Error('Session expirée'); }
       throw new Error(e.detail||`Erreur HTTP ${res.status}`);
     }
     return await res.json();
-  } catch(e){showNotification('⚠️',e.message||'Erreur réseau');throw e;}
+  } catch(e){ showNotification('⚠️',e.message||'Erreur réseau'); throw e; }
 }
 
-// ── CANDIDATES ──
+// ---------- Navigation ----------
+function showPage(page, filter) {
+  if (page==='admin' && !isAdminLoggedIn()) { openLoginModal(); return; }
+  _showPage(page, filter);
+}
+function _showPage(page, filter) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(page+'-page').classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelector(`.nav-btn[data-page="${page}"]`)?.classList.add('active');
+  if (page==='candidates') { if(filter) filterCandidates(filter); loadCandidates(); }
+  if (page==='results') loadResults();
+  if (page==='admin') loadAdminData();
+  window.scrollTo(0,0);
+}
+
+// ---------- CANDIDATES (sécurisé) ----------
 async function loadCandidates() {
   try {
     allCandidates = await apiFetch('/api/candidates/');
     const total = allCandidates.reduce((s,c)=>s+c.vote_count,0);
     document.getElementById('candSubtitle').textContent = `${allCandidates.filter(c=>c.status==='active').length} candidats · ${total} votes`;
-    renderCandidates(); updateHeroStats();
-  } catch {
-    document.getElementById('candidatesGrid').innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:50px;color:var(--muted)">⚠️ Impossible de charger les candidats</div>`;
-  }
+    renderCandidates();
+    updateHeroStats();
+  } catch { document.getElementById('candidatesGrid').innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:50px;color:var(--muted)">⚠️ Impossible de charger les candidats</div>`; }
 }
-
 function updateHeroStats() {
-  const a=allCandidates.filter(c=>c.status==='active');
-  const t=a.reduce((s,c)=>s+c.vote_count,0);
-  document.getElementById('statCandidates').textContent=a.length;
-  document.getElementById('statVotes').textContent=t;
-  document.getElementById('aboutMissCount').textContent=a.filter(c=>c.category==='miss').length;
-  document.getElementById('aboutMasterCount').textContent=a.filter(c=>c.category==='master').length;
+  const a = allCandidates.filter(c=>c.status==='active');
+  document.getElementById('statCandidates').textContent = a.length;
+  document.getElementById('statVotes').textContent = a.reduce((s,c)=>s+c.vote_count,0);
+  document.getElementById('aboutMissCount').textContent = a.filter(c=>c.category==='miss').length;
+  document.getElementById('aboutMasterCount').textContent = a.filter(c=>c.category==='master').length;
 }
-
 function filterCandidates(f) {
-  currentFilter=f;
-  ['all','miss','master'].forEach(x=>{
-    const b=document.getElementById('tab-'+x);
-    if(b)b.className='tab-btn'+(x===f?` active-${f}`:'');
+  currentFilter = f;
+  document.querySelectorAll('.tab-btn[data-filter]').forEach(btn => {
+    const val = btn.getAttribute('data-filter');
+    btn.classList.remove('active-all','active-miss','active-master');
+    if (val === f) btn.classList.add(`active-${f}`);
+    else if (f==='all' && val==='all') btn.classList.add('active-all');
   });
   renderCandidates();
 }
-
 function renderCandidates() {
-  const q=(document.getElementById('searchInput')?.value||'').toLowerCase();
-  const grid=document.getElementById('candidatesGrid');
-  const list=allCandidates.filter(c=>c.status==='active').filter(c=>currentFilter==='all'||c.category===currentFilter).filter(c=>c.name.toLowerCase().includes(q)||c.department.toLowerCase().includes(q));
-  if(!list.length){grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:50px;color:var(--muted)">Aucun candidat trouvé</div>`;return;}
-  const bg={miss:'linear-gradient(135deg,#2A1218,#1C0E14)',master:'linear-gradient(135deg,#0E1A10,#0A1410)'};
-  grid.innerHTML=list.map(c=>`
-    <div class="candidate-card" onclick="openProfile(${c.id})">
-      <div class="card-photo-placeholder" style="background:${bg[c.category]}">
-        ${c.photo_url?`<img src="${c.photo_url}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0">`:`<span style="position:relative;z-index:1;font-size:72px">${emojiFor(c)}</span>`}
-      </div>
-      <div class="card-category-badge ${c.category==='miss'?'badge-miss':'badge-master'}">${c.category==='miss'?'Miss':'Master'}</div>
-      <div class="card-number">${String(c.rank).padStart(2,'0')}</div>
-      <div class="card-info">
-        <div class="card-name">${c.name}</div>
-        <div class="card-class">${c.department} · ${c.year}</div>
-        <div class="card-votes">🗳 ${c.vote_count} vote${c.vote_count!==1?'s':''}</div>
-        <button class="btn-view">Voir le profil →</button>
-      </div>
-    </div>`).join('');
+  const q = (document.getElementById('searchInput')?.value||'').toLowerCase();
+  const grid = document.getElementById('candidatesGrid');
+  let list = allCandidates.filter(c=>c.status==='active')
+    .filter(c=>currentFilter==='all' || c.category===currentFilter)
+    .filter(c=>c.name.toLowerCase().includes(q) || c.department.toLowerCase().includes(q));
+  if (!list.length) { grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:50px;color:var(--muted)">Aucun candidat trouvé</div>`; return; }
+  const bg = {miss:'linear-gradient(135deg,#2A1218,#1C0E14)', master:'linear-gradient(135deg,#0E1A10,#0A1410)'};
+  grid.innerHTML = '';
+  list.forEach(c => {
+    const card = document.createElement('div'); card.className = 'candidate-card'; card.setAttribute('data-id', c.id);
+    const photoHtml = c.photo_url ? `<img src="${escapeHtml(c.photo_url)}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0">` : `<span style="position:relative;z-index:1;font-size:72px">${emojiFor(c)}</span>`;
+    card.innerHTML = `<div class="card-photo-placeholder" style="background:${bg[c.category]}">${photoHtml}</div><div class="card-category-badge ${c.category==='miss'?'badge-miss':'badge-master'}">${c.category==='miss'?'Miss':'Master'}</div><div class="card-number">${String(c.rank).padStart(2,'0')}</div><div class="card-info"><div class="card-name">${escapeHtml(c.name)}</div><div class="card-class">${escapeHtml(c.department)} · ${escapeHtml(c.year)}</div><div class="card-votes">🗳 ${c.vote_count} vote${c.vote_count!==1?'s':''}</div><button class="btn-view" data-id="${c.id}">Voir le profil →</button></div>`;
+    const viewBtn = card.querySelector('.btn-view');
+    viewBtn.addEventListener('click', (e) => { e.stopPropagation(); openProfile(c.id); });
+    card.addEventListener('click', (e) => { if (e.target !== viewBtn && !viewBtn.contains(e.target)) openProfile(c.id); });
+    grid.appendChild(card);
+  });
 }
-
 function openProfile(id) {
-  selectedCandidate=allCandidates.find(c=>c.id===id);
-  if(!selectedCandidate)return;
-  const c=selectedCandidate,isMiss=c.category==='miss',em=emojiFor(c);
-  document.getElementById('profileCover').style.background=isMiss?'linear-gradient(135deg,#2A1218,#1C0E14)':'linear-gradient(135deg,#0E1A10,#0A1410)';
-  document.getElementById('profileAvatar').innerHTML=c.photo_url?`<img src="${c.photo_url}" style="width:100%;height:100%;object-fit:cover;">`:em;
-  document.getElementById('profileCategory').innerHTML=`<span style="color:${isMiss?'var(--miss)':'var(--master)'}">${isMiss?'👑 Miss':'🌍 Master'} Terra Viva 2026</span>`;
-  document.getElementById('profileName').textContent=c.name;
-  document.getElementById('profileMeta').textContent=`${c.department} · ${c.year}${c.age?` · ${c.age} ans`:''}`;
-  document.getElementById('profileQuote').textContent=c.quote?`« ${c.quote} »`:'';
-  document.getElementById('profileBio').textContent=c.bio||'';
-  document.getElementById('profileVotes').textContent=c.vote_count;
-  document.getElementById('profileRank').textContent='#'+c.rank;
-  document.getElementById('profileNum').textContent=String(c.rank).padStart(2,'0');
-  document.getElementById('voteActionTitle').textContent=`Voter pour ${isMiss?'Miss':'Master'} ${c.name.split(' ')[0]}`;
-  document.getElementById('mainVoteBtn').className=`btn-vote-big ${isMiss?'miss-btn':'master-btn'}`;
-  document.getElementById('modalName').textContent=c.name;
-  document.getElementById('modalClass').textContent=`${c.department} · ${c.year}`;
-  document.getElementById('modalAvatar').innerHTML=c.photo_url?`<img src="${c.photo_url}" style="width:100%;height:100%;object-fit:cover;">`:em;
+  selectedCandidate = allCandidates.find(c=>c.id===id);
+  if (!selectedCandidate) return;
+  const c = selectedCandidate, isMiss = c.category==='miss', em = emojiFor(c);
+  document.getElementById('profileCover').style.background = isMiss ? 'linear-gradient(135deg,#2A1218,#1C0E14)' : 'linear-gradient(135deg,#0E1A10,#0A1410)';
+  document.getElementById('profileAvatar').innerHTML = c.photo_url ? `<img src="${escapeHtml(c.photo_url)}" style="width:100%;height:100%;object-fit:cover;">` : em;
+  document.getElementById('profileCategory').innerHTML = `<span style="color:${isMiss?'var(--miss)':'var(--master)'}">${isMiss?'👑 Miss':'🌍 Master'} Terra Viva 2026</span>`;
+  document.getElementById('profileName').textContent = c.name;
+  document.getElementById('profileMeta').textContent = `${c.department} · ${c.year}${c.age?` · ${c.age} ans`:''}`;
+  document.getElementById('profileQuote').textContent = c.quote ? `« ${c.quote} »` : '';
+  document.getElementById('profileBio').textContent = c.bio || '';
+  document.getElementById('profileVotes').textContent = c.vote_count;
+  document.getElementById('profileRank').textContent = '#'+c.rank;
+  document.getElementById('profileNum').textContent = String(c.rank).padStart(2,'0');
+  document.getElementById('voteActionTitle').textContent = `Voter pour ${isMiss?'Miss':'Master'} ${c.name.split(' ')[0]}`;
+  document.getElementById('mainVoteBtn').className = `btn-vote-big ${isMiss?'miss-btn':'master-btn'}`;
+  document.getElementById('modalName').textContent = c.name;
+  document.getElementById('modalClass').textContent = `${c.department} · ${c.year}`;
+  document.getElementById('modalAvatar').innerHTML = c.photo_url ? `<img src="${escapeHtml(c.photo_url)}" style="width:100%;height:100%;object-fit:cover;">` : em;
   showPage('profile');
 }
 
-function selectPayment(type) {
-  selectedPayment=type==='orange'?'orange_money':'mtn_momo';
-  document.getElementById('opt-orange').className='payment-option'+(type==='orange'?' selected-orange':'');
-  document.getElementById('opt-mtn').className='payment-option'+(type==='mtn'?' selected-mtn':'');
-}
+// ---------- VOTE MODAL (sécurisé) ----------
+function selectPayment(type) { selectedPayment = type==='orange'?'orange_money':'mtn_momo'; document.getElementById('opt-orange').className='payment-option'+(type==='orange'?' selected-orange':''); document.getElementById('opt-mtn').className='payment-option'+(type==='mtn'?' selected-mtn':''); }
+function openVoteModal() { document.querySelector('.step-indicator').style.display='flex'; selectModalPayment(selectedPayment==='orange_money'?'orange':'mtn'); goToStep(1); document.getElementById('voteModal').classList.add('open'); }
+function closeModal() { document.getElementById('voteModal').classList.remove('open'); if(pollInterval){clearInterval(pollInterval);pollInterval=null;} }
+function goToStep(n) { document.querySelectorAll('.step').forEach(s=>s.classList.remove('active')); document.getElementById('step'+n)?.classList.add('active'); for(let i=1;i<=3;i++){const d=document.getElementById('dot'+i);if(d)d.className='step-dot'+(i<n?' done':i===n?' active':'');} }
+function selectModalPayment(type) { selectedPayment=type==='orange'?'orange_money':'mtn_momo'; document.querySelectorAll('.pay-opt').forEach(opt=>opt.classList.remove('sel-orange','sel-mtn')); document.getElementById(`modal-${type}`).classList.add(`sel-${type}`); document.getElementById('paymentLabel').textContent=type==='orange'?'Orange Money':'MTN MoMo'; }
+function updateStudentFields() { document.getElementById('studentFields').style.display = document.getElementById('isStudentInput').checked ? 'block' : 'none'; }
 
-// ── MODAL ──
-function openVoteModal() {
-  document.querySelector('.step-indicator').style.display='flex';
-  selectModalPayment(selectedPayment==='orange_money'?'orange':'mtn');
-  goToStep(1);
-  document.getElementById('voteModal').classList.add('open');
-}
-function closeModal() {
-  document.getElementById('voteModal').classList.remove('open');
-  if(pollInterval){clearInterval(pollInterval);pollInterval=null;}
-}
-function goToStep(n) {
-  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
-  document.getElementById('step'+n)?.classList.add('active');
-  for(let i=1;i<=3;i++){const d=document.getElementById('dot'+i);if(d)d.className='step-dot'+(i<n?' done':i===n?' active':'');}
-}
-function selectModalPayment(type) {
-  selectedPayment=type==='orange'?'orange_money':'mtn_momo';
-  document.getElementById('modal-orange').className='pay-opt'+(type==='orange'?' sel-orange':'');
-  document.getElementById('modal-mtn').className='pay-opt'+(type==='mtn'?' sel-mtn':'');
-  document.getElementById('paymentLabel').textContent=type==='orange'?'Orange Money':'MTN MoMo';
-}
-function updateStudentFields() {
-  const s=document.getElementById('isStudentInput')?.checked;
-  const f=document.getElementById('studentFields');
-  if(f)f.style.display=s?'block':'none';
-}
-
-// ── INITIATE PAYMENT — validates email + international phone ──
 async function initiatePayment() {
-  const fullName   = document.getElementById('fullNameInput').value.trim();
-  const email      = document.getElementById('emailInput').value.trim();
-  const isStudent  = document.getElementById('isStudentInput').checked;
-  const consent    = document.getElementById('consentInput').checked;
-  const matricule  = document.getElementById('matriculeInput').value.trim();
-  const countryCode= document.getElementById('countryCode').value;
-  const phoneRaw   = document.getElementById('phoneInput').value.trim().replace(/[\s\-\(\)]/g,'');
-  const phone      = countryCode + phoneRaw;
-
-  // Clear previous errors
-  ['emailError','phoneError'].forEach(id=>{
-    const el=document.getElementById(id);el.textContent='';el.style.display='none';
-  });
-
-  // Validate name
-  if(!fullName){showNotification('⚠️','Le nom complet est requis');return;}
-
-  // Validate email
-  if(email){
-    const emailOk=/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(email);
-    if(!emailOk){
-      const el=document.getElementById('emailError');
-      el.textContent='Format invalide. Ex: nom@gmail.com';el.style.display='block';return;
-    }
+  const fullName = document.getElementById('fullNameInput').value.trim();
+  const email = document.getElementById('emailInput').value.trim();
+  const isStudent = document.getElementById('isStudentInput').checked;
+  const consent = document.getElementById('consentInput').checked;
+  const matricule = document.getElementById('matriculeInput').value.trim();
+  const countryCode = document.getElementById('countryCode').value;
+  const phoneRaw = document.getElementById('phoneInput').value.trim().replace(/[\s\-\(\)]/g,'');
+  const phone = countryCode + phoneRaw;
+  document.getElementById('emailError').style.display='none';
+  document.getElementById('phoneError').style.display='none';
+  if(!fullName){ showNotification('⚠️','Le nom complet est requis'); return; }
+  if(email && !/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(email)){
+    document.getElementById('emailError').textContent='Format invalide. Ex: nom@gmail.com'; document.getElementById('emailError').style.display='block'; return;
   }
-
-  // Validate phone
-  if(!phoneRaw){showNotification('⚠️','Le numéro de téléphone est requis');return;}
+  if(!phoneRaw){ showNotification('⚠️','Le numéro de téléphone est requis'); return; }
   if(!/^\d{5,14}$/.test(phoneRaw)){
-    const el=document.getElementById('phoneError');
-    el.textContent='Numéro invalide — chiffres seulement, sans indicatif pays';el.style.display='block';return;
+    document.getElementById('phoneError').textContent='Numéro invalide — chiffres seulement, sans indicatif pays'; document.getElementById('phoneError').style.display='block'; return;
   }
-
-  if(isStudent&&!matricule){showNotification('⚠️','Veuillez saisir votre matricule');return;}
-  if(!consent){showNotification('⚠️','Veuillez accepter les conditions');return;}
-  if(!selectedCandidate)return;
-
-  const btn=document.getElementById('payBtn');
-  btn.disabled=true;btn.textContent='⏳ Envoi en cours...';
-
+  if(isStudent && !matricule){ showNotification('⚠️','Veuillez saisir votre matricule'); return; }
+  if(!consent){ showNotification('⚠️','Veuillez accepter les conditions'); return; }
+  if(!selectedCandidate) return;
+  const btn = document.getElementById('payBtn');
+  btn.disabled=true; btn.textContent='⏳ Envoi en cours...';
   try {
-    const res=await apiFetch('/api/payments/initiate',{
+    const res = await apiFetch('/api/payments/initiate',{
       method:'POST',
       body:JSON.stringify({
-        full_name:   fullName,
-        email:       email||null,
-        is_student:  isStudent,
-        matricule:   isStudent?matricule:null,
-        phone:       phone,
-        provider:    selectedPayment,
-        candidate_id:selectedCandidate.id,
+        full_name: fullName, email: email||null, is_student: isStudent,
+        matricule: isStudent?matricule:null, phone: phone, provider: selectedPayment,
+        candidate_id: selectedCandidate.id,
       }),
     });
-    currentPaymentRef=res.reference;
-    document.getElementById('paymentIcon').textContent=selectedPayment==='orange_money'?'🟠':'🟡';
-    document.getElementById('phoneDisplay').textContent=phone;
-    document.getElementById('refDisplay').textContent='Réf: '+res.reference;
+    currentPaymentRef = res.reference;
+    document.getElementById('paymentIcon').textContent = selectedPayment==='orange_money'?'🟠':'🟡';
+    document.getElementById('phoneDisplay').textContent = phone;
+    document.getElementById('refDisplay').textContent = 'Réf: '+res.reference;
     goToStep(3);
     startPolling(res.reference);
     showNotification('📱',`Demande envoyée au ${phone}`);
-  } catch{/* shown by apiFetch */}
-  finally{btn.disabled=false;btn.textContent='Payer 25 FCFA →';}
+  } catch(e) { /* already notified */ }
+  finally { btn.disabled=false; btn.textContent='Payer 25 FCFA →'; }
 }
-
 function startPolling(reference) {
   let attempts=0;
-  pollInterval=setInterval(async()=>{
-    if(++attempts>40){clearInterval(pollInterval);return;}
+  if(pollInterval) clearInterval(pollInterval);
+  pollInterval = setInterval(async()=>{
+    if(++attempts>40){ clearInterval(pollInterval); return; }
     try{
-      const s=await apiFetch(`/api/payments/status/${reference}`);
-      if(s.status==='success'){clearInterval(pollInterval);castVoteAfterPayment();}
-      if(s.status==='failed'||s.status==='cancelled'){
-        clearInterval(pollInterval);showNotification('❌','Paiement échoué ou annulé');goToStep(2);
-      }
+      const s = await apiFetch(`/api/payments/status/${reference}`);
+      if(s.status==='success'){ clearInterval(pollInterval); castVoteAfterPayment(); }
+      if(s.status==='failed'||s.status==='cancelled'){ clearInterval(pollInterval); showNotification('❌','Paiement échoué ou annulé'); goToStep(2); }
     }catch{}
   },3000);
 }
-
 async function confirmVote() {
-  if(!currentPaymentRef||!selectedCandidate)return;
-  const btn=document.getElementById('confirmBtn');
-  btn.disabled=true;btn.textContent='⏳ Vérification...';
+  if(!currentPaymentRef||!selectedCandidate) return;
+  const btn = document.getElementById('confirmVoteBtn');
+  btn.disabled=true; btn.textContent='⏳ Vérification...';
   try {
-    // 1. Vérifier le statut du paiement
     const status = await apiFetch(`/api/payments/status/${currentPaymentRef}`);
-    if(status.status==='success'){
-      // Paiement déjà confirmé par Campay → enregistrer le vote
-      castVoteAfterPayment();
-      return;
-    }
-    // 2. Si encore pending → enregistrer le vote directement via l'API votes
-    // (l'argent a été payé physiquement — le voter a confirmé sur son téléphone)
+    if(status.status==='success'){ castVoteAfterPayment(); return; }
     await apiFetch('/api/votes/',{
       method:'POST',
       body:JSON.stringify({
-        candidate_id:  selectedCandidate.id,
-        category:      selectedCandidate.category,
-        full_name:     document.getElementById('fullNameInput')?.value?.trim()||'Votant',
-        is_student:    document.getElementById('isStudentInput')?.checked||false,
-        matricule:     document.getElementById('matriculeInput')?.value?.trim()||null,
-        payment_method:selectedPayment,
-        phone:         document.getElementById('countryCode')?.value+document.getElementById('phoneInput')?.value?.trim(),
+        candidate_id: selectedCandidate.id, category: selectedCandidate.category,
+        full_name: document.getElementById('fullNameInput').value.trim(),
+        is_student: document.getElementById('isStudentInput').checked,
+        matricule: document.getElementById('matriculeInput').value.trim()||null,
+        payment_method: selectedPayment,
+        phone: document.getElementById('countryCode').value+document.getElementById('phoneInput').value.trim(),
       }),
     });
     castVoteAfterPayment();
   } catch(e){
-    // Si erreur 409 = déjà voté → succès quand même
-    if(e.message.includes('409')||e.message.includes('déjà voté')){
-      castVoteAfterPayment();
-    } else {
-      showNotification('⚠️','Vérifiez que vous avez bien confirmé le paiement sur votre téléphone');
-    }
-  } finally {
-    btn.disabled=false;btn.textContent='✓ J\'ai confirmé le paiement';
-  }
+    if(e.message.includes('409')||e.message.includes('déjà voté')) castVoteAfterPayment();
+    else showNotification('⚠️','Vérifiez que vous avez bien confirmé le paiement sur votre téléphone');
+  } finally { btn.disabled=false; btn.textContent='✓ J\'ai confirmé le paiement'; }
 }
-
 function castVoteAfterPayment() {
-  if(pollInterval){clearInterval(pollInterval);pollInterval=null;}
-  if(selectedCandidate){const c=allCandidates.find(x=>x.id===selectedCandidate.id);if(c){c.vote_count++;document.getElementById('profileVotes').textContent=c.vote_count;}}
-  document.getElementById('successMsg').textContent=`Votre vote pour ${selectedCandidate?.name} a été enregistré avec succès. Merci de participer au Terra Viva Royalty Day ENSPM Maroua 2026 !`;
+  if(pollInterval){ clearInterval(pollInterval); pollInterval=null; }
+  if(selectedCandidate){ const c = allCandidates.find(x=>x.id===selectedCandidate.id); if(c){ c.vote_count++; document.getElementById('profileVotes').textContent=c.vote_count; } }
+  document.getElementById('successMsg').textContent = `Votre vote pour ${selectedCandidate?.name} a été enregistré avec succès. Merci de participer au Terra Viva Royalty Day ENSPM Maroua 2026 !`;
   document.querySelector('.step-indicator').style.display='none';
   document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
   document.getElementById('stepSuccess').classList.add('active');
   showNotification('✅','Vote enregistré avec succès !');
 }
 
-// ── RESULTS ──
+// ---------- RESULTS ----------
 async function loadResults() {
   try{
-    resultsData=await apiFetch('/api/votes/results');
+    resultsData = await apiFetch('/api/votes/results');
     renderPodium('miss','missPodium',resultsData.miss);
     renderPodium('master','masterPodium',resultsData.master);
     renderResultList(currentResultTab);
   }catch{['missPodium','masterPodium','resultsList'].forEach(id=>{document.getElementById(id).innerHTML=`<div style="text-align:center;padding:26px;color:var(--muted)">⚠️ Résultats indisponibles</div>`;});}
 }
-
 function renderPodium(cat,containerId,data) {
-  if(!data||!data.length){document.getElementById(containerId).innerHTML='<div style="text-align:center;width:100%;color:var(--muted);padding:18px">Pas encore de votes</div>';return;}
-  const sorted=[...data].sort((a,b)=>b.vote_count-a.vote_count);
-  const order=[sorted[1]||null,sorted[0],sorted[2]||null];
-  const ranks=[2,1,3],crowns=['🥈','👑','🥉'],cls=['podium-2nd','podium-1st','podium-3rd'];
-  document.getElementById(containerId).innerHTML=order.map((c,i)=>!c?'':`
-    <div class="podium-item ${cls[i]}">
-      <div class="podium-photo">
-        <div class="podium-crown">${crowns[i]}</div>
-        ${c.photo_url?`<img src="${c.photo_url}" style="width:100%;height:100%;object-fit:cover;">`:(cat==='miss'?'👑':'🌿')}
-      </div>
-      <div class="podium-name">${c.name.split(' ')[0]}</div>
-      <div class="podium-votes">${c.vote_count} vote${c.vote_count!==1?'s':''}</div>
-      <div class="podium-block"><div class="podium-rank">#${ranks[i]}</div></div>
-    </div>`).join('');
+  if(!data||!data.length){ document.getElementById(containerId).innerHTML='<div style="text-align:center;width:100%;color:var(--muted);padding:18px">Pas encore de votes</div>'; return; }
+  const sorted = [...data].sort((a,b)=>b.vote_count-a.vote_count);
+  const order = [sorted[1]||null, sorted[0], sorted[2]||null];
+  const ranks = [2,1,3], crowns=['🥈','👑','🥉'], cls=['podium-2nd','podium-1st','podium-3rd'];
+  document.getElementById(containerId).innerHTML = order.map((c,i)=>!c?'':`<div class="podium-item ${cls[i]}"><div class="podium-photo"><div class="podium-crown">${crowns[i]}</div>${c.photo_url?`<img src="${escapeHtml(c.photo_url)}" style="width:100%;height:100%;object-fit:cover;">`:(cat==='miss'?'👑':'🌿')}</div><div class="podium-name">${escapeHtml(c.name.split(' ')[0])}</div><div class="podium-votes">${c.vote_count} vote${c.vote_count!==1?'s':''}</div><div class="podium-block"><div class="podium-rank">#${ranks[i]}</div></div></div>`).join('');
 }
-
 function renderResultList(cat) {
-  if(!resultsData)return;
-  const list=cat==='miss'?resultsData.miss:resultsData.master;
-  if(!list||!list.length){document.getElementById('resultsList').innerHTML='<div style="text-align:center;padding:36px;color:var(--muted)">Pas encore de votes dans cette catégorie</div>';return;}
-  const max=Math.max(...list.map(x=>x.vote_count),1);
-  document.getElementById('resultsList').innerHTML=list.map((c,i)=>`
-    <div class="result-row">
-      <div class="result-rank ${i===0?'r1':i===1?'r2':i===2?'r3':''}">${i+1}</div>
-      <div class="result-avatar">${c.photo_url?`<img src="${c.photo_url}" style="width:100%;height:100%;object-fit:cover;">`:(cat==='miss'?'👑':'🌿')}</div>
-      <div class="result-info"><div class="result-name">${c.name}</div><div class="result-class">${c.department}</div></div>
-      <div class="result-bar-wrap"><div class="result-bar-track"><div class="result-bar-fill bar-${cat}" style="width:${Math.round(c.vote_count/max*100)}%"></div></div></div>
-      <div class="result-votes">${c.vote_count}</div>
-    </div>`).join('');
+  if(!resultsData) return;
+  const list = cat==='miss'?resultsData.miss:resultsData.master;
+  if(!list||!list.length){ document.getElementById('resultsList').innerHTML='<div style="text-align:center;padding:36px;color:var(--muted)">Pas encore de votes dans cette catégorie</div>'; return; }
+  const max = Math.max(...list.map(x=>x.vote_count),1);
+  document.getElementById('resultsList').innerHTML = list.map((c,i)=>`<div class="result-row"><div class="result-rank ${i===0?'r1':i===1?'r2':i===2?'r3':''}">${i+1}</div><div class="result-avatar">${c.photo_url?`<img src="${escapeHtml(c.photo_url)}" style="width:100%;height:100%;object-fit:cover;">`:(cat==='miss'?'👑':'🌿')}</div><div class="result-info"><div class="result-name">${escapeHtml(c.name)}</div><div class="result-class">${escapeHtml(c.department)}</div></div><div class="result-bar-wrap"><div class="result-bar-track"><div class="result-bar-fill bar-${cat}" style="width:${Math.round(c.vote_count/max*100)}%"></div></div></div><div class="result-votes">${c.vote_count}</div></div>`).join('');
 }
+function switchResultTab(cat) { currentResultTab=cat; document.querySelectorAll('.rtab').forEach(btn=>btn.classList.remove('active-miss','active-master')); document.querySelector(`.rtab[data-rtab="${cat}"]`).classList.add(`active-${cat}`); renderResultList(cat); }
 
-function switchResultTab(cat) {
-  currentResultTab=cat;
-  document.getElementById('rtab-miss').className='rtab'+(cat==='miss'?' active-miss':'');
-  document.getElementById('rtab-master').className='rtab'+(cat==='master'?' active-master':'');
-  renderResultList(cat);
-}
-
-// ── ADMIN ──
-function _initAdminHeader() {
-  // Ajouter bouton déconnexion dans le header admin
-  const header = document.querySelector('.admin-header');
-  if (header && !document.getElementById('logoutBtn')) {
-    const role = sessionStorage.getItem('admin_role') || '';
-    const info = document.createElement('div');
-    info.style.cssText = 'display:flex;align-items:center;gap:10px;';
-    info.innerHTML = `
-      <span style="font-size:11px;color:var(--muted);">
-        ${role==='super_admin'?'👑 Super Admin':'👁 Modérateur'}
-      </span>
-      <button id="logoutBtn" onclick="adminLogout()" style="
-        background:none;border:1px solid rgba(196,115,106,0.35);
-        border-radius:6px;padding:5px 12px;color:var(--miss);
-        cursor:pointer;font-size:11px;font-family:'DM Sans',sans-serif;
-      ">↩ Déconnexion</button>
-    `;
-    header.appendChild(info);
-  }
-}
-
-async function loadAdminData(){
-  _initAdminHeader();
-  await Promise.all([loadAdminStats(),loadAdminCandidates(),loadAdminSettings(),loadAuditLog()]);
-}
-
+// ---------- ADMIN (sécurisé) ----------
+async function loadAdminData(){ await Promise.all([loadAdminStats(),loadAdminCandidates(),loadAdminSettings(),loadAuditLog()]); updateAdminRoleBadge(); }
+function updateAdminRoleBadge(){ const role=sessionStorage.getItem('admin_role'); const badge=document.getElementById('adminRoleBadge'); if(badge) badge.textContent=role==='super_admin'?'👑 Super Admin':'👁 Modérateur'; }
 async function loadAdminStats(){
-  try{
-    const s=await apiFetch('/api/admin/stats');
-    document.getElementById('as-votes').textContent=s.total_votes;
-    document.getElementById('as-candidates').textContent=s.total_active_candidates;
-    document.getElementById('as-revenue').textContent=s.total_revenue_fcfa.toLocaleString('fr-FR');
-    document.getElementById('as-voters').textContent=s.unique_voters;
-  }catch{}
+  try{ const s=await apiFetch('/api/admin/stats'); document.getElementById('as-votes').textContent=s.total_votes; document.getElementById('as-candidates').textContent=s.total_active_candidates; document.getElementById('as-revenue').textContent=s.total_revenue_fcfa.toLocaleString('fr-FR'); document.getElementById('as-voters').textContent=s.unique_voters; }catch(e){}
 }
-
 async function loadAdminCandidates(){
   try{
-    const data=await apiFetch('/api/candidates/?status=active');
-    document.getElementById('adminCandidateTable').innerHTML=data.map(c=>`
-      <tr>
-        <td style="color:var(--muted)">${c.rank}</td>
-        <td style="font-weight:600">${c.photo_url?`<img src="${c.photo_url}" style="width:22px;height:22px;border-radius:50%;object-fit:cover;margin-right:6px;vertical-align:middle;">`:''}${c.name}</td>
-        <td><span style="padding:2px 8px;border-radius:4px;font-size:9px;background:${c.category==='miss'?'var(--miss-dim)':'var(--master-dim)'};color:${c.category==='miss'?'var(--miss)':'var(--master)'}">${c.category==='miss'?'Miss':'Master'}</span></td>
-        <td style="color:var(--muted);font-size:11px">${c.department}</td>
-        <td style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--gold)">${c.vote_count}</td>
-        <td><span style="padding:2px 8px;border-radius:4px;font-size:9px;background:rgba(90,128,64,0.15);color:var(--leaf)">${c.status}</span></td>
-        <td><button onclick="deleteCandidate(${c.id},${JSON.stringify(c.name)})" style="background:none;border:1px solid rgba(196,115,106,0.3);border-radius:4px;padding:3px 8px;color:var(--miss);cursor:pointer;font-size:10px;font-family:'DM Sans',sans-serif;">Supprimer</button></td>
-      </tr>`).join('')||'<tr><td colspan="7" style="text-align:center;padding:18px;color:var(--muted)">Aucun candidat actif</td></tr>';
-  }catch{}
+    const data = await apiFetch('/api/candidates/?status=active');
+    const tbody = document.getElementById('adminCandidateTable');
+    tbody.innerHTML = '';
+    const role = sessionStorage.getItem('admin_role');
+    const isSuper = (role === 'super_admin');
+    data.forEach(c => {
+      const row = tbody.insertRow();
+      row.insertCell().textContent = c.rank;
+      const nameCell = row.insertCell();
+      nameCell.innerHTML = `${c.photo_url ? `<img src="${escapeHtml(c.photo_url)}" style="width:22px;height:22px;border-radius:50%;object-fit:cover;margin-right:6px;vertical-align:middle;">` : ''}${escapeHtml(c.name)}`;
+      const catCell = row.insertCell();
+      catCell.innerHTML = `<span style="padding:2px 8px;border-radius:4px;font-size:9px;background:${c.category==='miss'?'var(--miss-dim)':'var(--master-dim)'};color:${c.category==='miss'?'var(--miss)':'var(--master)'}">${c.category==='miss'?'Miss':'Master'}</span>`;
+      row.insertCell().textContent = c.department;
+      row.insertCell().innerHTML = `<span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--gold)">${c.vote_count}</span>`;
+      row.insertCell().innerHTML = `<span style="padding:2px 8px;border-radius:4px;font-size:9px;background:rgba(90,128,64,0.15);color:var(--leaf)">${c.status}</span>`;
+      const actionCell = row.insertCell();
+      if (isSuper) {
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Supprimer';
+        delBtn.style.cssText = 'background:none;border:1px solid rgba(196,115,106,0.3);border-radius:4px;padding:3px 8px;color:var(--miss);cursor:pointer;font-size:10px;font-family:\'DM Sans\',sans-serif;';
+        delBtn.addEventListener('click', () => deleteCandidate(c.id, c.name));
+        actionCell.appendChild(delBtn);
+      } else {
+        actionCell.textContent = '—';
+      }
+    });
+  } catch(e){}
 }
-
 async function loadAdminSettings(){
   try{
-    const s=await apiFetch('/api/admin/settings');
-    document.getElementById('settingsPanel').innerHTML=[
+    const s = await apiFetch('/api/admin/settings');
+    const container = document.getElementById('settingsPanel');
+    const items = [
       ['voting_open','🟢 Votes actifs','Activer / désactiver le vote global',s.voting_open==='true'],
       ['results_public','📊 Résultats publics','Afficher les résultats en temps réel',s.results_public==='true'],
       ['orange_money_enabled','🟠 Orange Money','Accepter les paiements Orange Money',s.orange_money_enabled==='true'],
       ['mtn_momo_enabled','🟡 MTN MoMo','Accepter les paiements MTN Mobile Money',s.mtn_momo_enabled==='true'],
-    ].map(([key,label,desc,checked])=>`
-      <div class="toggle-row">
-        <div><div class="toggle-label">${label}</div><div class="toggle-desc">${desc}</div></div>
-        <label class="toggle"><input type="checkbox" class="setting-toggle" data-key="${key}" ${checked?'checked':''}><span class="toggle-slider"></span></label>
-      </div>`).join('');
+    ];
+    container.innerHTML = items.map(([key,label,desc,checked])=>`<div class="toggle-row"><div><div class="toggle-label">${label}</div><div class="toggle-desc">${desc}</div></div><label class="toggle"><input type="checkbox" class="setting-toggle" data-key="${key}" ${checked?'checked':''}><span class="toggle-slider"></span></label></div>`).join('');
     document.querySelectorAll('.setting-toggle').forEach(el=>{
-      el.addEventListener('change',async e=>{
-        const key=e.target.dataset.key,value=e.target.checked?'true':'false';
+      el.addEventListener('change', async e=>{
+        const key = e.target.dataset.key, value = e.target.checked?'true':'false';
         await apiFetch('/api/admin/settings',{method:'PUT',body:JSON.stringify({key,value})});
         showNotification('✓',`Paramètre "${key}" mis à jour`);
       });
     });
-  }catch{}
+  }catch(e){}
 }
-
 async function loadAuditLog(){
   try{
-    const data=await apiFetch('/api/admin/audit-log?limit=25');
-    document.getElementById('auditTable').innerHTML=data.map(r=>`
-      <tr>
-        <td style="color:var(--muted);font-size:10px">${(r.created_at||'').slice(0,16)}</td>
-        <td style="font-weight:600;font-size:12px">${r.candidate_name}</td>
-        <td><span style="padding:2px 7px;border-radius:3px;font-size:9px;background:${r.category==='miss'?'var(--miss-dim)':'var(--master-dim)'};color:${r.category==='miss'?'var(--miss)':'var(--master)'}">${r.category}</span></td>
-        <td style="font-size:11px">${(r.payment_method||'').replace('_',' ')}</td>
-        <td style="font-size:11px;color:var(--muted)">${r.matricule||r.ip_address}</td>
-        <td style="font-size:10px;color:var(--muted)">${r.ip_address}</td>
-      </tr>`).join('')||'<tr><td colspan="6" style="text-align:center;padding:18px;color:var(--muted)">Aucun vote enregistré</td></tr>';
-  }catch{}
+    const data = await apiFetch('/api/admin/audit-log?limit=25');
+    const tbody = document.getElementById('auditTable');
+    tbody.innerHTML = data.map(r=>`<tr><td style="color:var(--muted);font-size:10px">${(r.created_at||'').slice(0,16)}</td><td style="font-weight:600;font-size:12px">${escapeHtml(r.candidate_name)}</td><td><span style="padding:2px 7px;border-radius:3px;font-size:9px;background:${r.category==='miss'?'var(--miss-dim)':'var(--master-dim)'};color:${r.category==='miss'?'var(--miss)':'var(--master)'}">${r.category}</span></td><td style="font-size:11px">${(r.payment_method||'').replace('_',' ')}</td><td style="font-size:11px;color:var(--muted)">${escapeHtml(r.matricule||r.ip_address)}</td><td style="font-size:10px;color:var(--muted)">${r.ip_address}</td></tr>`).join('') || '<tr><td colspan="6" style="text-align:center;padding:18px;color:var(--muted)">Aucun vote enregistré</td></tr>';
+  }catch(e){}
 }
-
 async function addCandidate(){
-  const data={name:document.getElementById('f-name').value.trim(),category:document.getElementById('f-category').value,department:document.getElementById('f-dept').value,year:document.getElementById('f-year').value,age:parseInt(document.getElementById('f-age').value)||null,quote:document.getElementById('f-quote').value.trim()||null,bio:document.getElementById('f-bio').value.trim()||null,status:document.getElementById('f-status').value};
-  if(!data.name){showNotification('⚠️','Le nom est requis');return;}
-  try{await apiFetch('/api/candidates/',{method:'POST',body:JSON.stringify(data)});showNotification('✅',`${data.name} ajouté(e) !`);await loadAdminCandidates();['f-name','f-age','f-quote','f-bio'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});}catch{}
+  const data = {
+    name: document.getElementById('f-name').value.trim(),
+    category: document.getElementById('f-category').value,
+    department: document.getElementById('f-dept').value,
+    year: document.getElementById('f-year').value,
+    age: parseInt(document.getElementById('f-age').value)||null,
+    quote: document.getElementById('f-quote').value.trim()||null,
+    bio: document.getElementById('f-bio').value.trim()||null,
+    status: document.getElementById('f-status').value,
+  };
+  if(!data.name){ showNotification('⚠️','Le nom est requis'); return; }
+  try{
+    await apiFetch('/api/candidates/',{method:'POST',body:JSON.stringify(data)});
+    showNotification('✅',`${data.name} ajouté(e) !`);
+    await loadAdminCandidates();
+    ['f-name','f-age','f-quote','f-bio'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  }catch(e){}
 }
-
 async function deleteCandidate(id,name){
-  if(!confirm(`Supprimer définitivement ${name} ?`))return;
-  try{await apiFetch(`/api/candidates/${id}`,{method:'DELETE'});showNotification('🗑️',`${name} supprimé(e)`);await loadAdminCandidates();}catch{}
+  if(!confirm(`Supprimer définitivement ${name} ?`)) return;
+  try{
+    await apiFetch(`/api/candidates/${id}`,{method:'DELETE'});
+    showNotification('🗑️',`${name} supprimé(e)`);
+    await loadAdminCandidates();
+  }catch(e){}
 }
-
-function switchAdminTab(btn,panelId){
-  document.querySelectorAll('.admin-tab').forEach(t=>t.classList.remove('active'));
+function switchAdminTab(panelId){
+  document.querySelectorAll('.admin-tab').forEach(btn=>btn.classList.remove('active'));
+  document.querySelector(`.admin-tab[data-panel="${panelId}"]`).classList.add('active');
   document.querySelectorAll('.admin-panel').forEach(p=>p.classList.remove('active'));
-  btn.classList.add('active');document.getElementById(panelId).classList.add('active');
+  document.getElementById(panelId).classList.add('active');
 }
 
-// ── SHARE ──
+// ---------- SHARE ----------
 function shareWhatsApp(){
-  if(!selectedCandidate)return;
-  const c=selectedCandidate,cat=c.category==='miss'?'Miss':'Master';
-  const msg=`👑 Votez pour ${c.name} — ${cat} Terra Viva 2026 !\n🏫 ENSPM Maroua · ${c.department}\n📱 Seulement 25 FCFA via Orange Money ou MTN MoMo\n\n📅 Samedi 9 Mai 2026 · 13H00\n📍 Alliance Française de Garoua, Antenne de Maroua\n\n🌿 "Notre Culture au Cœur de l'Ingénierie"`;
+  if(!selectedCandidate) return;
+  const c=selectedCandidate, cat=c.category==='miss'?'Miss':'Master';
+  const msg = `👑 Votez pour ${c.name} — ${cat} Terra Viva 2026 !\n🏫 ENSPM Maroua · ${c.department}\n📱 Seulement 25 FCFA via Orange Money ou MTN MoMo\n\n📅 Samedi 9 Mai 2026 · 13H00\n📍 Alliance Française de Garoua, Antenne de Maroua\n\n🌿 "Notre Culture au Cœur de l'Ingénierie"`;
   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
 }
-function shareFacebook(){
-  window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`,'_blank');
-}
+function shareFacebook(){ window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`,'_blank'); }
 
-// ── COUNTDOWN ──
-const deadline=new Date('2026-05-09T12:00:00Z');
+// ---------- COUNTDOWN ----------
+const deadline = new Date('2026-05-09T12:00:00Z');
 function updateCountdown(){
-  const diff=deadline-new Date();
-  if(diff<=0){['cdDays','cdHours','cdMins','cdSecs'].forEach(id=>{document.getElementById(id).textContent='00';});return;}
-  const d=Math.floor(diff/86400000),h=Math.floor((diff%86400000)/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);
+  const diff = deadline - new Date();
+  if(diff<=0){ ['cdDays','cdHours','cdMins','cdSecs'].forEach(id=>document.getElementById(id).textContent='00'); return; }
+  const d=Math.floor(diff/86400000), h=Math.floor((diff%86400000)/3600000), m=Math.floor((diff%3600000)/60000), s=Math.floor((diff%60000)/1000);
   document.getElementById('cdDays').textContent=String(d).padStart(2,'0');
   document.getElementById('cdHours').textContent=String(h).padStart(2,'0');
   document.getElementById('cdMins').textContent=String(m).padStart(2,'0');
   document.getElementById('cdSecs').textContent=String(s).padStart(2,'0');
 }
-setInterval(updateCountdown,1000);updateCountdown();
 
-// ── NOTIFICATION ──
+// ---------- NOTIFICATION ----------
 let notifTimer;
 function showNotification(icon,msg){
   document.getElementById('notifIcon').textContent=icon;
   document.getElementById('notifMsg').textContent=msg;
   const el=document.getElementById('notification');
-  el.classList.add('show');clearTimeout(notifTimer);
+  el.classList.add('show');
+  clearTimeout(notifTimer);
   notifTimer=setTimeout(()=>el.classList.remove('show'),3200);
 }
 
-document.getElementById('voteModal').addEventListener('click',e=>{if(e.target.id==='voteModal')closeModal();});
-document.getElementById('isStudentInput')?.addEventListener('change',updateStudentFields);
+// ---------- LOGIN MODAL ----------
+function openLoginModal(){ document.getElementById('loginModal').classList.add('open'); setTimeout(()=>document.getElementById('loginUsername')?.focus(),100); }
+function closeLoginModal(){ document.getElementById('loginModal').classList.remove('open'); document.getElementById('loginError').style.display='none'; document.getElementById('loginPassword').value=''; }
+async function submitLogin(){
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  const btn = document.getElementById('loginBtn');
+  errEl.style.display='none';
+  if(!username||!password){ errEl.textContent='Veuillez remplir tous les champs'; errEl.style.display='block'; return; }
+  btn.disabled=true; btn.textContent='⏳ Connexion...';
+  try{
+    const res = await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+    const data = await res.json();
+    if(!res.ok){ errEl.textContent=data.detail||'Identifiants incorrects'; errEl.style.display='block'; return; }
+    adminToken = data.access_token;
+    sessionStorage.setItem('admin_token', adminToken);
+    sessionStorage.setItem('admin_role', data.role);
+    closeLoginModal();
+    showNotification('✅',`Connecté — ${username}`);
+    _showPage('admin');
+  } catch(e){ errEl.textContent='Erreur réseau — réessayez'; errEl.style.display='block'; }
+  finally{ btn.disabled=false; btn.textContent='Connexion →'; }
+}
 
-// Init
-updateStudentFields();
-loadCandidates();
+// ---------- INITIALISATION DES ÉCOUTEURS ----------
+document.addEventListener('DOMContentLoaded', () => {
+  // Navigation
+  document.querySelectorAll('.nav-btn[data-page]').forEach(btn => {
+    btn.addEventListener('click', () => showPage(btn.getAttribute('data-page')));
+  });
+  document.getElementById('navVoteBtn').addEventListener('click', () => showPage('candidates','all'));
+  document.getElementById('navBrand').addEventListener('click', () => showPage('hero'));
+  document.getElementById('heroVoteMiss').addEventListener('click', () => showPage('candidates','miss'));
+  document.getElementById('heroVoteMaster').addEventListener('click', () => showPage('candidates','master'));
+  document.getElementById('profileBackBtn').addEventListener('click', () => showPage('candidates'));
+  document.getElementById('refreshResultsBtn').addEventListener('click', () => loadResults());
+  // Filtres candidats
+  document.querySelectorAll('.tab-btn[data-filter]').forEach(btn => {
+    btn.addEventListener('click', () => filterCandidates(btn.getAttribute('data-filter')));
+  });
+  document.getElementById('searchInput').addEventListener('input', () => renderCandidates());
+  // Paiement sur profil
+  document.getElementById('opt-orange').addEventListener('click', () => selectPayment('orange'));
+  document.getElementById('opt-mtn').addEventListener('click', () => selectPayment('mtn'));
+  document.getElementById('mainVoteBtn').addEventListener('click', openVoteModal);
+  // Modale vote
+  document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+  document.getElementById('step1NextBtn').addEventListener('click', () => goToStep(2));
+  document.getElementById('step2BackBtn').addEventListener('click', () => goToStep(1));
+  document.getElementById('step3BackBtn').addEventListener('click', () => goToStep(2));
+  document.getElementById('payBtn').addEventListener('click', initiatePayment);
+  document.getElementById('confirmVoteBtn').addEventListener('click', confirmVote);
+  document.getElementById('successViewResultsBtn').addEventListener('click', () => { closeModal(); showPage('results'); });
+  document.querySelectorAll('.pay-opt').forEach(opt => {
+    opt.addEventListener('click', () => selectModalPayment(opt.getAttribute('data-pay')));
+  });
+  document.getElementById('isStudentInput').addEventListener('change', updateStudentFields);
+  // Résultats
+  document.querySelectorAll('.rtab[data-rtab]').forEach(btn => {
+    btn.addEventListener('click', () => switchResultTab(btn.getAttribute('data-rtab')));
+  });
+  // Admin
+  document.querySelectorAll('.admin-tab[data-panel]').forEach(btn => {
+    btn.addEventListener('click', () => switchAdminTab(btn.getAttribute('data-panel')));
+  });
+  document.getElementById('addCandidateBtn').addEventListener('click', addCandidate);
+  // Login modal
+  document.getElementById('loginBtn').addEventListener('click', submitLogin);
+  document.getElementById('closeLoginModalBtn').addEventListener('click', closeLoginModal);
+  document.getElementById('loginModal').addEventListener('click', e => { if(e.target.id==='loginModal') closeLoginModal(); });
+  document.getElementById('voteModal').addEventListener('click', e => { if(e.target.id==='voteModal') closeModal(); });
+  // Partage
+  document.getElementById('shareWhatsappBtn').addEventListener('click', shareWhatsApp);
+  document.getElementById('shareFacebookBtn').addEventListener('click', shareFacebook);
+  // Initialisation
+  updateStudentFields();
+  loadCandidates();
+  setInterval(updateCountdown,1000);
+  updateCountdown();
+});
 </script>
 </body>
 </html>
