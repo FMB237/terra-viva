@@ -41,7 +41,13 @@ def _get_client():
 async def _initiate_campay(phone: str, amount: int, reference: str) -> dict:
     if not CAMPAY_USERNAME:
         print(f"[MOCK] Paiement simulé → {phone} | {amount} XAF | ref:{reference}")
-        return {"reference": reference, "status": "PENDING", "message": "Mode démo"}
+        return {
+            "reference": reference,
+            "campay_reference": None,
+            "status": "PENDING",
+            "message": "Mode démo"
+        }
+    
     try:
         client = _get_client()
         result = client.collect({
@@ -52,26 +58,39 @@ async def _initiate_campay(phone: str, amount: int, reference: str) -> dict:
             "external_reference": reference,
         })
         print(f"[Campay] collect() → {result}")
-        return result or {}
+        
+        return {
+            "reference": reference,
+            "campay_reference": result.get("reference"),  # Campay's UUID
+            "status": result.get("status", "PENDING"),
+            "operator": result.get("operator"),
+            "message": "Initiated"
+        }
     except Exception as exc:
         print(f"[Campay] Erreur initiation: {exc}")
-        return {"reference": reference, "status": "PENDING", "message": str(exc)}
+        return {
+            "reference": reference,
+            "campay_reference": None,
+            "status": "PENDING",
+            "message": str(exc)
+        }
 
 
-async def _get_campay_status(reference: str) -> str:
-    # ✅ Skip Campay API call if in mock mode (no credentials)
-    if not CAMPAY_USERNAME:
-        return "PENDING"  # Always return PENDING in mock mode
+async def _get_campay_status(campay_reference: str) -> str:
+    """Check status using Campay's reference (UUID), not external reference."""
+    if not CAMPAY_USERNAME or not campay_reference:
+        return "PENDING"
     
     try:
         client = _get_client()
-        result = client.get_transaction_status({"reference": reference})
-        print(f"[Campay] get_transaction_status({reference}) → {result}")
+        result = client.get_transaction_status({
+            "reference": campay_reference
+        })
+        print(f"[Campay] get_transaction_status({campay_reference}) → {result}")
         
-        # Handle error responses
         if "message" in result and result["message"] == "Invalid reference":
-            print(f"[Campay] Reference not found in Campay system: {reference}")
-            return "PENDING"  # Keep as pending if not found
+            print(f"[Campay] Reference not found: {campay_reference}")
+            return "PENDING"
         
         return result.get("status", "PENDING")
     except Exception as exc:
@@ -159,7 +178,7 @@ async def _finalize_vote(db, payment: dict):
         try:
             meta = json.loads(payment["metadata"])
         except (json.JSONDecodeError, TypeError):
-            pass  # metadata may be None or malformed — safe to ignore
+            pass
 
     phone     = payment["phone"]
     matricule = payment["voter_matricule"]
@@ -256,18 +275,23 @@ async def initiate_payment(data: PaymentInitiate, db=Depends(get_db)):
         "matricule":  data.matricule,
     }, ensure_ascii=False)
 
+    # Initiate payment with Campay and get campay_reference
+    campay_result = await _initiate_campay(data.phone, VOTE_PRICE, reference)
+
     await db.execute(
         """INSERT INTO payments
-           (reference, phone, amount, provider, status, candidate_id,
+           (reference, campay_reference, phone, amount, provider, status, candidate_id,
             voter_matricule, metadata, created_at, updated_at)
-           VALUES (?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)""",
-        (reference, data.phone, VOTE_PRICE, data.provider,
-         data.candidate_id, data.matricule or data.phone,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (reference,
+         campay_result.get("campay_reference"),  # Store Campay's UUID
+         data.phone, VOTE_PRICE, data.provider,
+         "pending",
+         data.candidate_id,
+         data.matricule or data.phone,
          metadata, now, now),
     )
     await db.commit()
-
-    await _initiate_campay(data.phone, VOTE_PRICE, reference)
 
     return PaymentOut(
         reference=reference, status="pending",
@@ -313,13 +337,16 @@ async def payment_status(reference: str, db=Depends(get_db)):
 
     payment = dict(row)
 
-    if payment["status"] == "pending" and CAMPAY_USERNAME:
-        campay_status = await _get_campay_status(reference)
+    # Only poll Campay if payment is pending AND we have campay_reference
+    if payment["status"] == "pending" and CAMPAY_USERNAME and payment.get("campay_reference"):
+        campay_status = await _get_campay_status(payment["campay_reference"])
+        
         status_map = {
             "SUCCESSFUL": "success",
             "FAILED":     "failed",
             "CANCELLED":  "cancelled",
         }
+        
         if campay_status in status_map:
             new_status = status_map[campay_status]
             now = _now()
@@ -328,8 +355,10 @@ async def payment_status(reference: str, db=Depends(get_db)):
                 (new_status, now, reference),
             )
             await db.commit()
+            
             if new_status == "success":
                 await _finalize_vote(db, payment)
+            
             payment["status"] = new_status
 
     return {
